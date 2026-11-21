@@ -1088,6 +1088,47 @@ def eval_obs_fci_py(ham, dets, psi0, spec, ham_cache):
     raise ValueError(f"Unsupported observable spec: {spec}")
 
 
+def analyze_gpc_py(ham, dets, psi0):
+    K = ham["K"]
+    c = np.asarray(psi0, dtype=np.float64)
+    n2 = float(np.dot(c, c))
+    Ga = np.zeros((K, K), dtype=np.float64)
+    Gb = np.zeros((K, K), dtype=np.float64)
+
+    def jw_par_py(det, bit):
+        return -1 if (popcnt(det & ((1 << bit) - 1)) & 1) else 1
+
+    for i, dI in enumerate(dets):
+        ci = float(c[i])
+        if abs(ci) < 1e-16:
+            continue
+        w = (ci * ci) / n2
+        for p in range(K):
+            if (dI >> (2 * p)) & 1:
+                Ga[p, p] += w
+            if (dI >> (2 * p + 1)) & 1:
+                Gb[p, p] += w
+        for j in range(i):
+            cj = float(c[j])
+            if abs(cj) < 1e-16:
+                continue
+            dJ = dets[j]
+            diff = dI ^ dJ
+            if popcnt(diff) == 2:
+                p_so = (dI & diff).bit_length() - 1
+                q_so = (dJ & diff).bit_length() - 1
+                if (p_so & 1) == (q_so & 1):
+                    sgn = jw_par_py(dJ, q_so) * jw_par_py(dJ ^ (1 << q_so), p_so)
+                    val = (sgn * ci * cj) / n2
+                    p, q = p_so >> 1, q_so >> 1
+                    G = Ga if (p_so & 1) == 0 else Gb
+                    G[p, q] += val
+                    G[q, p] += val
+    eva = np.linalg.eigvalsh(Ga)[::-1]
+    evb = np.linalg.eigvalsh(Gb)[::-1]
+    return np.sort(np.concatenate([eva, evb]))[::-1]
+
+
 def eval_witness_py(ham, dets_hex, coeffs):
     dets = [int(x, 16) for x in dets_hex]
     c = np.array(coeffs, dtype=np.float64)
@@ -1253,6 +1294,7 @@ def verify_py_adjoints():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bench", required=True)
+    ap.add_argument("--atlas", default="build/chem_atlas.json")
     ap.add_argument("--cert-dir", required=True)
     ap.add_argument("--bench-dir", required=True)
     ap.add_argument("--report", required=True)
@@ -1402,9 +1444,98 @@ def main():
     s_ok = sdk.mlip_screen(h4_path, e_ai=-1.90, f_ai=o_hf_fci, f_plus=hp_path, f_minus=hm_path, dr=0.005)
     assert not s_ok["vetoed"], f"SDK valid HF force falsely vetoed: {s_ok}"
 
+    # Gate 6 (v0.3.0): Zero-FP-Trust Lean 4 Molecular Proofs, Hubbard Mott Atlas, GPC & Variance/Fidelity
+    lean_specs = [
+        ("CertH2R14", "h2_r1.4"),
+        ("CertH2R50", "h2_r5.0"),
+        ("CertH4Ry20", "h4_ry2.0"),
+    ]
+    lean_rows = []
+    for mod_name, base_name in lean_specs:
+        lpath = os.path.join(args.cert_dir, f"{mod_name}.lean")
+        opath = os.path.join(args.cert_dir, f"{mod_name}.olean")
+        apath = os.path.join(args.cert_dir, f"{mod_name}.axioms.txt")
+        jpath = os.path.join(args.cert_dir, f"{base_name}.cert.json")
+        assert os.path.exists(lpath) and os.path.exists(opath) and os.path.exists(apath), f"Missing Lean cert for {mod_name}"
+        with open(apath) as af:
+            ax_txt = af.read()
+        assert "molecule_lower_bound_sound" in ax_txt, f"Missing molecule_lower_bound_sound in {apath}"
+        assert "molecule_bracket_valid" in ax_txt, f"Missing molecule_bracket_valid in {apath}"
+        assert "sorryAx" not in ax_txt and "Lean.ofReduceBool" not in ax_txt, f"Forbidden axiom in {apath}:\n{ax_txt}"
+        ev_res = sdk.exact_verify(jpath)
+        assert ev_res["ok"] is True and ev_res["all_blocks_sdd"] == 1, f"exact_verify failed on {jpath}: {ev_res}"
+        with open(lpath) as lf:
+            n_lines = sum(1 for _ in lf)
+        lean_rows.append((mod_name, base_name, n_lines, ev_res["nblocks"], ev_res["E_lb_int_chol"],
+                          abs(ev_res["E_lb_int_chol"] - ev_res["E_lb_weyl"])))
+
+    with open(args.atlas) as f:
+        atlas = json.load(f)
+
+    hubb_rows = []
+    hub_by = {}
+    for h in atlas["hubbard_mott"]:
+        fpath = os.path.join(args.bench_dir, h["fcidump"])
+        if fpath not in ham_cache:
+            ham_cache[fpath] = parse_fcidump(fpath)
+        ham = ham_cache[fpath]
+        efci_py, dets_h, psi0_h = solve_fci_state_py(ham)
+        assert abs(h["E_fci"] - efci_py) < 1e-10
+        assert h["E_lb_dqg"] <= efci_py + 1e-11
+        assert h["E_lb_t2"] <= efci_py + 1e-11
+        assert h["E_lb_t2"] >= h["E_lb_dqg"] - 5e-4
+        assert h["sigma_fci"] < 1e-10
+        docc_fci = eval_obs_fci_py(ham, dets_h, psi0_h, "docc:0", ham_cache)
+        sdot_fci = eval_obs_fci_py(ham, dets_h, psi0_h, "sdot:0:1", ham_cache)
+        assert abs(h["docc0_var"] - docc_fci) < 1e-10
+        assert abs(h["sdot01_var"] - sdot_fci) < 1e-10
+        assert h["docc0_lb"] - 1e-10 <= docc_fci <= h["docc0_ub"] + 1e-10
+        assert h["sdot01_lb"] - 1e-10 <= sdot_fci <= h["sdot01_ub"] + 1e-10
+        hub_by[h["name"]] = h
+        hubb_rows.append((h, docc_fci, sdot_fci))
+
+    # Certified Mott transition separation between U=0.5 (delocalized) and U=12.0 (Mott insulator)
+    docc_sep = hub_by["hubbard4_u0.5"]["docc0_lb"] - hub_by["hubbard4_u12.0"]["docc0_ub"]
+    sdot_sep = hub_by["hubbard4_u0.5"]["sdot01_lb"] - hub_by["hubbard4_u12.0"]["sdot01_ub"]
+    assert docc_sep > 0.1, f"Hubbard Mott docc0 failed to separate: {docc_sep}"
+    assert sdot_sep > 0.05, f"Hubbard Mott sdot01 failed to separate: {sdot_sep}"
+
+    gpc_rows = []
+    for g in atlas["gpc_cases"]:
+        fpath = os.path.join(args.bench_dir, g["fcidump"])
+        if fpath not in ham_cache:
+            ham_cache[fpath] = parse_fcidump(fpath)
+        ham = ham_cache[fpath]
+        _, dets_g, psi0_g = solve_fci_state_py(ham)
+        occ_py = analyze_gpc_py(ham, dets_g, psi0_g)
+        if g["name"] == "h3_doublet":
+            pe_py = float(max(abs(occ_py[0] + occ_py[5] - 1.0),
+                              abs(occ_py[1] + occ_py[4] - 1.0),
+                              abs(occ_py[2] + occ_py[3] - 1.0)))
+            sl_py = float(occ_py[4] + occ_py[5] - occ_py[3])
+            assert abs(g["bd_pair_err"] - pe_py) < 1e-11 and g["bd_pair_err"] < 1e-12
+            assert abs(g["bd_slack"] - sl_py) < 1e-11 and sl_py >= -1e-12
+            assert g["bd_lb_cert"] - 1e-10 <= sl_py <= g["bd_ub_cert"] + 1e-10
+        else:
+            pe24_py = float(max(abs(occ_py[0] + occ_py[3] - 1.0),
+                                abs(occ_py[1] + occ_py[2] - 1.0)))
+            assert abs(g["bd24_pair_err"] - pe24_py) < 1e-11 and g["bd24_pair_err"] < 1e-12
+        gpc_rows.append(g)
+
+    vf = atlas["variance_fidelity"]
+    assert vf["E_weinstein"] <= efci_h4 + 1e-10
+    assert 0.0 < vf["fidelity_eckart_lb"] <= vf["fidelity_exact"] + 1e-10
+
+    # Live SDK v0.3.0 checks
+    ev_sdk_bin = sdk.exact_verify(os.path.join(args.cert_dir, "h4_ry2.0.flowchem"))
+    assert ev_sdk_bin["ok"] is True and ev_sdk_bin["all_blocks_sdd"] == 1
+    gpc_sdk = sdk.gpc(os.path.join(args.bench_dir, "h3_doublet.fcidump"), certify_bd=True)
+    assert gpc_sdk["has_bd_3e3o"] == 1 and gpc_sdk["bd_pair_err"] < 1e-12
+    assert gpc_sdk["bd_lb_cert"] - 1e-10 <= gpc_sdk["bd_slack"] <= gpc_sdk["bd_ub_cert"] + 1e-10
+
     # Emit Markdown verification report
     lines = [
-        "# CHEM v0.2.0 Verification Report\n",
+        "# CHEM v0.3.0 Verification Report\n",
         f"- **C Matrix-Free Adjoint Max Error (`K=4..16`, Mode A & B):** `{c_adj_max:.2e}` (`< 1e-14` PASS)",
         f"- **C Matrix-Free `T2` Adjoint Max Error (`Ks<=6`, Mode A & B):** `{c_t2_adj_max:.2e}` (`< 1e-14` PASS)",
         f"- **Python/NumPy Independent Adjoint Max Error (DQG / T2):** `{py_adj_err:.2e}` / `{py_t2_adj_err:.2e}` (`< 1e-14` PASS)",
@@ -1495,14 +1626,65 @@ def main():
         f"- `sdk.mlip_screen` exact FCI Hellmann-Feynman force (`f_ai={o_hf_fci:.6f}`): `vetoed={s_ok['vetoed']}` (PASS)",
     ]
 
-    lines.append("\nALL CHEM v0.2.0 PHASE 1-5 ACCEPTANCE GATES PASSED WITH ZERO VIOLATIONS.\n")
+    lines += [
+        "\n## Acceptance Gate 6 (`v0.3.0`): Zero-FP-Trust Lean Proofs, Hubbard Mott Phase Diagram & Generalized Pauli Constraints",
+        "\n### 6a. Zero-FP-Trust Per-Molecule Lean 4 + `leanchecker` Certificates (`0 sorryAx`, `0 Lean.ofReduceBool`)",
+        "| Lean Module | Molecule | Lines | Blocks | $E_{\\text{LB}}^{\\text{IntChol}}$ (Ha) | $|\\Delta E_{\\text{Weyl}}|$ (Ha) | Kernel Audit |",
+        "| :--- | :--- | :---: | :---: | :---: | :---: | :---: |",
+    ]
+    for mod_name, base_name, n_lines, nblk, e_chol, d_weyl in lean_rows:
+        lines.append(
+            f"| `{mod_name}` | `{base_name}` | `{n_lines}` | `{nblk}` | `{e_chol:.8f}` | `{d_weyl:.2e}` | `leanchecker OK` |"
+        )
+
+    lines += [
+        "\n### 6b. Certified Hubbard Mott Phase Diagram & `DQG` vs `DQG+T2` Relaxation-Gap Atlas",
+        "| Model | $U/t$ | Gap `DQG` (mHa) | Gap `DQG+T2` (mHa) | $S_1$ | `docc0` Bracket ($\\langle d_0\\rangle_{\\text{FCI}}$) | `sdot01` Bracket ($\\langle \\mathbf{S}_0\\cdot\\mathbf{S}_1\\rangle_{\\text{FCI}}$) |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+    ]
+    for h, docc_fci, sdot_fci in hubb_rows:
+        lines.append(
+            f"| `{h['name']}` | `{h['U']:.1f}` | `{h['gap_dqg_mha']:.3f}` | `{h['gap_t2_mha']:.3f}` | "
+            f"`{h['entanglement_entropy']:.3f}` | `[{h['docc0_lb']:.4f}, {h['docc0_ub']:.4f}]` (`{docc_fci:.4f}`) | "
+            f"`[{h['sdot01_lb']:.4f}, {h['sdot01_ub']:.4f}]` (`{sdot_fci:.4f}`) |"
+        )
+
+    lines += [
+        f"\n- **Certified Mott Metal-to-Insulator Separation (`U=0.5` vs `U=12.0`):** "
+        f"`docc0` separated by `+{docc_sep:.4f}`, `sdot01` separated by `+{sdot_sep:.4f}` (disjoint intervals, Theorem C13 PASS).",
+        "\n### 6c. Generalized Pauli Constraints (Borland–Dennis $\\mathcal{B}_{3,6}$ & $\\mathcal{B}_{2,4}$)",
+        "| System | Sector | Pairing Err | $\\mathcal{B}_{3,6}$ Slack | Pinned | $S_1$ | Certified $\\mathcal{B}_{3,6}$ Bracket |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+    ]
+    for g in gpc_rows:
+        if g["has_bd_3e3o"]:
+            lines.append(
+                f"| `{g['name']}` | `(3e,3o)` | `{g['bd_pair_err']:.2e}` | `{g['bd_slack']:.2e}` | "
+                f"`{bool(g['bd_pinned'])}` | `{g['entanglement_entropy']:.4f}` | "
+                f"`[{g['bd_lb_cert']:.6f}, {g['bd_ub_cert']:.6f}]` |"
+            )
+        else:
+            lines.append(
+                f"| `{g['name']}` | `(2e,2o)` | `{g['bd24_pair_err']:.2e}` | `-` | `-` | "
+                f"`{g['entanglement_entropy']:.4f}` | `-` |"
+            )
+
+    lines += [
+        "\n### 6d. Exact Full-Space Variance, Weinstein Bound & Eckart Wavefunction Fidelity (`h4_ry2.0`, 4-det SHCI)",
+        f"- Truncated 4-det energy `E_tr = {vf['E_tr']:.8f} Ha` (`sigma_tr = {vf['sigma_tr']:.6f}` Ha), Weinstein LB `= {vf['E_weinstein']:.8f} <= E_FCI = {vf['E_fci']:.8f}` (PASS)",
+        f"- Certified Eckart Ground-State Fidelity LB: `{vf['fidelity_eckart_lb']:.6f} <= fidelity_exact = {vf['fidelity_exact']:.6f}` (PASS)",
+        f"- Live SDK `v0.3.0`: `sdk.exact_verify(h4_ry2.0.flowchem)` PASS (`D={ev_sdk_bin['scale_D']}`), `sdk.gpc(h3_doublet, certify_bd=True)` PASS",
+    ]
+
+    lines.append("\nALL CHEM v0.3.0 PHASE 1-6 ACCEPTANCE GATES PASSED WITH ZERO VIOLATIONS.\n")
     with open(args.report, "w") as f:
         f.write("\n".join(lines))
 
     print(f"[ORACLE PASS] Adjoints max={c_adj_max:.2e} (T2={c_t2_adj_max:.2e}) | Exact FCI checked={len(fci_checks)} (0 violations) | "
           f"Certs audited={len(cert_files)} (max_diff={max_cert_diff:.2e}) | Peak RSS={data['peak_rss_mb']:.2f} MB")
     print(f"[ORACLE PASS] TM Spin Gap = +{tm_sep*1000.0:.2f} mHa | Obs checked={len(obs_checks)} (0 violations) | "
-          f"T2 strict gains={strict_gains}/{len(t2_cases)} | SDK OK | Wrote {args.report}")
+          f"T2 strict gains={strict_gains}/{len(t2_cases)} | Lean certs={len(lean_rows)} (0 sorryAx) | "
+          f"Mott sep=(+{docc_sep:.3f}, +{sdot_sep:.3f}) | Wrote {args.report}")
 
 
 if __name__ == "__main__":

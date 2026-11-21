@@ -12,7 +12,7 @@ extern "C" {
 
 struct ChemVarResult;
 
-#define CHEM_MAX_BLOCKS 13
+#define CHEM_MAX_BLOCKS 17
 
 typedef enum {
     CHEM_MODE_AUTO = 0,
@@ -35,6 +35,11 @@ typedef struct {
     int t2_max_orbs;      /* auto cap Ks when t2_norbs==0 (0 = auto min(K, 6)) */
     int t2_norbs;         /* explicit T2 active orbital count (0 = auto select) */
     int t2_orbs[CHEM_MAX_ORBITALS];
+    int enable_t1;        /* 1 to include exact/subspace T1 = D3 + Q3 partial 3-RDM blocks (default 0) */
+    int t1_max_orbs;      /* auto cap Ks when t1_norbs==0 (0 = auto min(K, 6)) */
+    int t1_norbs;         /* explicit T1 active orbital count (0 = auto select) */
+    int t1_orbs[CHEM_MAX_ORBITALS];
+    int export_rdm_grad;  /* 1 to populate primal_grad_h1 & primal_grad_eri on ChemSolveResult */
     int num_threads;      /* 0 = auto (up to 4 pthreads when max_dim >= 120), 1 = serial */
     int verbose;
 } ChemSolveOpts;
@@ -58,23 +63,31 @@ typedef struct {
     int t2_enabled;
     int t2_norbs;
     int t2_orbs[CHEM_MAX_ORBITALS];
+    int t1_enabled;
+    int t1_norbs;
+    int t1_orbs[CHEM_MAX_ORBITALS];
     int meq;
     int nD;
     int nQ;
     int nG;
     int nT2;
+    int nT1;
     double *y_eq; /* [meq] */
     double *Z_Q;  /* [nQ] in isometric svec format */
     double *Z_G;  /* [nG] in isometric svec format */
     double *Z_T2; /* [nT2] in isometric svec format (NULL if t2_enabled == 0) */
+    double *Z_T1; /* [nT1] in isometric svec format (NULL if t1_enabled == 0) */
 } ChemDualWitness;
 
 typedef struct {
     ChemMode mode_used;
-    int nblocks; /* 6/8 for Mode A (DQG/DQG+T2), 9/13 for Mode B */
+    int nblocks; /* 6/8/10 for Mode A, 9/13/17 for Mode B */
     int t2_enabled;
     int t2_norbs;
     int t2_orbs[CHEM_MAX_ORBITALS];
+    int t1_enabled;
+    int t1_norbs;
+    int t1_orbs[CHEM_MAX_ORBITALS];
     int iters;
     int converged;
     int vetoed;
@@ -92,6 +105,9 @@ typedef struct {
     double block_traces[CHEM_MAX_BLOCKS];
     double block_min_fp[CHEM_MAX_BLOCKS];
     double block_min_cert[CHEM_MAX_BLOCKS];
+    int K_grad;
+    double *primal_grad_h1;  /* [K*K] when export_rdm_grad == 1 */
+    double *primal_grad_eri; /* [K^4] when export_rdm_grad == 1 */
     ChemDualWitness witness;
 } ChemSolveResult;
 
@@ -99,6 +115,7 @@ typedef struct {
     double err_LQ;
     double err_LG;
     double err_LT2;
+    double err_LT1;
     double err_Aeq;
     double max_err;
 } ChemAdjointReport;
@@ -141,6 +158,22 @@ typedef struct {
     char msg[256];
 } ChemCertVerifyResult;
 
+typedef struct {
+    int ok;
+    int sha_ok;
+    int all_blocks_sdd;
+    int lb_ok;
+    int var_ok;
+    int nblocks;
+    int64_t scale_D;
+    double E_lb_int_chol;
+    double E_lb_weyl;
+    double E_var_recomputed;
+    double max_sdd_margin;
+    double elapsed_sec;
+    char msg[256];
+} ChemExactVerifyResult;
+
 ChemSolveOpts chem_solve_opts_default(const ChemHam *ham);
 ChemMode chem_resolve_mode(const ChemHam *ham, const ChemSolveOpts *opts);
 const char *chem_block_name(ChemMode mode, int blk_idx);
@@ -153,6 +186,8 @@ void chem_observable_free(ChemObservable *obs);
 int chem_obs_orbital_occ(int K, int p, ChemObservable *out, char *err, size_t err_sz);
 int chem_obs_double_occ(int K, int p, ChemObservable *out, char *err, size_t err_sz);
 int chem_obs_spin_corr(int K, int p, int q, ChemObservable *out, char *err, size_t err_sz);
+int chem_obs_spin_1body(int K, const double *o1_a, const double *o1_b, double o_const,
+                        const char *name, ChemObservable *out, char *err, size_t err_sz);
 int chem_obs_ham_diff(const ChemHam *h_plus, const ChemHam *h_minus, double scale,
                       const char *name, ChemObservable *out, char *err, size_t err_sz);
 
@@ -182,6 +217,10 @@ int chem_test_adjoints_t2(int K, int na, int nb, int two_s, int constrain_s2, Ch
                           int t2_norbs, const int *t2_orbs, uint64_t seed,
                           ChemAdjointReport *rep, char *err, size_t err_sz);
 
+int chem_test_adjoints_t12(int K, int na, int nb, int two_s, int constrain_s2, ChemMode mode,
+                           int t2_norbs, const int *t2_orbs, int t1_norbs, const int *t1_orbs,
+                           uint64_t seed, ChemAdjointReport *rep, char *err, size_t err_sz);
+
 /* Verifies CAR map Q = q0 + L_Q(D), G = g0 + L_G(D), A_eq(D) = b_eq, PSD, and energy on FCI blocks */
 int chem_verify_fci_dqg_consistency(const ChemHam *ham, ChemMode mode, int two_s,
                                     const double *D_svec, const double *Q_svec, const double *G_svec,
@@ -192,6 +231,12 @@ int chem_verify_fci_dqg_consistency(const ChemHam *ham, ChemMode mode, int two_s
 /* Verifies T2(D_FCI) >= 0 and exact T2 block traces when t2_norbs == K */
 int chem_verify_fci_t2_psd(const ChemHam *ham, ChemMode mode, int two_s,
                            int t2_norbs, const int *t2_orbs, const double *D_svec,
+                           double *min_eig_out, double *trace_err_out,
+                           char *err, size_t err_sz);
+
+/* Verifies T1(D_FCI) = (D3 + Q3)(D_FCI) >= 0 and exact T1 block traces when t1_norbs == K */
+int chem_verify_fci_t1_psd(const ChemHam *ham, ChemMode mode, int two_s,
+                           int t1_norbs, const int *t1_orbs, const double *D_svec,
                            double *min_eig_out, double *trace_err_out,
                            char *err, size_t err_sz);
 
@@ -207,6 +252,41 @@ int chem_cert_write_bin(const char *path, const ChemHam *ham, const char *fcidum
 
 int chem_cert_verify_file(const char *fcidump_override, const char *cert_path,
                           ChemCertVerifyResult *out);
+
+/* Zero-FP-Trust integer Cholesky + SDD exact verifier for JSON & .flowchem certificates */
+int chem_cert_verify_exact_chol(const char *fcidump_override, const char *cert_path,
+                                ChemExactVerifyResult *out);
+
+/* Emits a standalone kernel-verified Lean 4 certificate (.lean) with CheckCholeskySDD proofs */
+int chem_cert_emit_lean(const char *fcidump_override, const char *cert_path,
+                        const char *out_lean_path, const char *module_name,
+                        ChemExactVerifyResult *out, char *err, size_t err_sz);
+
+/* Persistent in-process BPSDP session for warm-started multi-Hamiltonian optimization sweeps */
+typedef struct ChemSession ChemSession;
+
+ChemSession *chem_session_create(int K, int nelec, int ms2, int mode, int two_s, int constrain_s2,
+                                 int enable_t1, int t1_orbs, int enable_t2, int t2_orbs,
+                                 int nthreads, char *err, size_t err_sz);
+
+void chem_session_free(ChemSession *sess);
+
+int chem_session_solve(ChemSession *sess, double e_core, const double *h1, const double *eri,
+                       int max_iters, double tol, int warm_start, double *E_lb_out,
+                       double *E_primal_out, int *iters_out, int *conv_out,
+                       double *grad_h1_out, double *grad_eri_out, char *err, size_t err_sz);
+
+/* Rotates Hamiltonian and observables by orthogonal K x K matrix U (row-major, columns are new orbitals) */
+int chem_ham_rotate_orthogonal(const ChemHam *src, const double *U, ChemHam *dst,
+                               char *err, size_t err_sz);
+
+int chem_obs_rotate_orthogonal(const ChemObservable *src, const double *U, ChemObservable *dst,
+                               char *err, size_t err_sz);
+
+/* Pilot DQG solve -> entanglement-sorted natural-orbital Hamiltonian (highest static correlation first) */
+int chem_ham_build_dqg_no(const ChemHam *src, const ChemSolveOpts *opts_in, ChemHam *dst_no,
+                          double *no_occs_out, double *no_ent_out, double *U_out,
+                          char *err, size_t err_sz);
 
 #ifdef __cplusplus
 }

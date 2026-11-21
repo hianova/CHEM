@@ -472,3 +472,49 @@ int chem_fcidump_load(const char *path, ChemHam *ham, char *err, size_t err_sz) 
     chem_ham_finalize(ham);
     return 0;
 }
+
+int chem_fcidump_write(const char *path, const ChemHam *ham, char *err, size_t err_sz) {
+    if (!path || !ham || !ham->h || !ham->eri) {
+        set_err(err, err_sz, "invalid argument to chem_fcidump_write");
+        return -1;
+    }
+    FILE *fp = fopen(path, "w");
+    if (!fp) {
+        set_err(err, err_sz, "cannot open FCIDUMP '%s' for writing", path);
+        return -1;
+    }
+    int K = ham->K;
+    fprintf(fp, " &FCI NORB=%d,NELEC=%d,MS2=%d,\n", K, ham->nelec, ham->ms2);
+    fprintf(fp, "  ORBSYM=");
+    for (int i = 0; i < K; i++) fprintf(fp, "1,");
+    fprintf(fp, "\n  ISYM=1,\n &END\n");
+    for (int p = 0; p < K; p++) {
+        for (int q = 0; q <= p; q++) {
+            int pq = p * (p + 1) / 2 + q;
+            for (int r = 0; r < K; r++) {
+                for (int s = 0; s <= r; s++) {
+                    int rs = r * (r + 1) / 2 + s;
+                    if (rs > pq) continue;
+                    double v = chem_ham_eri(ham, p, q, r, s);
+                    if (fabs(v) > 1e-15) {
+                        fprintf(fp, " %25.17e %3d %3d %3d %3d\n", v, p + 1, q + 1, r + 1, s + 1);
+                    }
+                }
+            }
+        }
+    }
+    for (int p = 0; p < K; p++) {
+        for (int q = 0; q <= p; q++) {
+            double v = chem_ham_h1(ham, p, q);
+            if (fabs(v) > 1e-15) {
+                fprintf(fp, " %25.17e %3d %3d   0   0\n", v, p + 1, q + 1);
+            }
+        }
+    }
+    fprintf(fp, " %25.17e   0   0   0   0\n", ham->E_core);
+    if (fclose(fp) != 0) {
+        set_err(err, err_sz, "error flushing FCIDUMP '%s'", path);
+        return -1;
+    }
+    return 0;
+}

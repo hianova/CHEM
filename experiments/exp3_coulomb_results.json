@@ -1,0 +1,704 @@
+{
+  "total_elapsed_sec": 247.94007205963135,
+  "grad_check": {
+    "max_err_h1": 4.159638883338701e-10,
+    "max_err_B": 3.566930362186582e-10
+  },
+  "baseline_frontier2": {
+    "hunt3a_k4_fci_t12_mha": 95.2647,
+    "hunt3b_k5_fci_t12_mha": 69.048,
+    "hunt1a_k5_t1_beats_t2_mha": 16.292
+  },
+  "m2_geometry_manifold": {
+    "n_surveyed": 120,
+    "top5_survey": [
+      {
+        "label": "H4_rhomb_s2.6_a60",
+        "Z_list": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "coords_bohr": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            2.6,
+            0.0,
+            0.0
+          ],
+          [
+            1.3000000000000003,
+            2.25166604983954,
+            0.0
+          ],
+          [
+            3.9000000000000004,
+            2.25166604983954,
+            0.0
+          ]
+        ],
+        "enuc": 2.145134718919087,
+        "norm": 3.538359685378209,
+        "E0_fci": -1.9160763190147823,
+        "E_lb_t12": -1.9233440640514774,
+        "gap_raw_mha": 7.267745036695139,
+        "gap_frob_mha": 2.0539870682814154,
+        "min_dist_bohr": 2.5999999999999996,
+        "min_eig_S": 0.5600242891274417
+      },
+      {
+        "label": "H4_rhomb_s1.4_a75",
+        "Z_list": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "coords_bohr": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0,
+            0.0
+          ],
+          [
+            0.36234666314352904,
+            1.3522961568046956,
+            0.0
+          ],
+          [
+            1.762346663143529,
+            1.3522961568046956,
+            0.0
+          ]
+        ],
+        "enuc": 3.893982873469588,
+        "norm": 4.4555586743627185,
+        "E0_fci": -1.6043669827539269,
+        "E_lb_t12": -1.6112610360956,
+        "gap_raw_mha": 6.894053341673034,
+        "gap_frob_mha": 1.5472926843812904,
+        "min_dist_bohr": 1.4,
+        "min_eig_S": 0.15675815207533003
+      },
+      {
+        "label": "H4_pyr_r1.9",
+        "Z_list": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "coords_bohr": [
+          [
+            1.9,
+            0.0,
+            0.0
+          ],
+          [
+            -0.95,
+            1.6454482599999998,
+            0.0
+          ],
+          [
+            -0.95,
+            -1.6454482599999998,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.615
+          ]
+        ],
+        "enuc": 2.1146677723848395,
+        "norm": 3.5161423576644095,
+        "E0_fci": -1.8737924924667155,
+        "E_lb_t12": -1.876489301088623,
+        "gap_raw_mha": 2.696808621907465,
+        "gap_frob_mha": 0.7669793619217439,
+        "min_dist_bohr": 2.4936368974525998,
+        "min_eig_S": 0.5801076020947101
+      },
+      {
+        "label": "H4_trap_3.0_1.6_dz0.0",
+        "Z_list": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "coords_bohr": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            3.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.7,
+            2.0,
+            0.0
+          ],
+          [
+            2.3,
+            2.0,
+            -0.0
+          ]
+        ],
+        "enuc": 2.5583704046241373,
+        "norm": 3.7829097794893944,
+        "E0_fci": -1.988772535237142,
+        "E_lb_t12": -1.9914123812370954,
+        "gap_raw_mha": 2.639845999953483,
+        "gap_frob_mha": 0.6978347763582671,
+        "min_dist_bohr": 1.5999999999999999,
+        "min_eig_S": 0.3133117135285407
+      },
+      {
+        "label": "HeH3+_rand_04",
+        "Z_list": [
+          2,
+          1,
+          1,
+          1
+        ],
+        "coords_bohr": [
+          [
+            1.6299807647429476,
+            1.249442038142519,
+            1.5874669946029603
+          ],
+          [
+            1.3077555099477205,
+            -1.218763600309688,
+            0.48390672623000874
+          ],
+          [
+            1.2652273813985133,
+            -1.544161386604991,
+            -1.627093087322866
+          ],
+          [
+            -1.8793730539016347,
+            1.6151492325648986,
+            -0.06523835121690981
+          ]
+        ],
+        "enuc": 2.6281095275706132,
+        "norm": 4.501952119181688,
+        "E0_fci": -3.744561716599736,
+        "E_lb_t12": -3.747368777553667,
+        "gap_raw_mha": 2.8070609539310176,
+        "gap_frob_mha": 0.62352083709883,
+        "min_dist_bohr": 2.136354973749459,
+        "min_eig_S": 0.5608581739256104
+      }
+    ],
+    "winner_metadata": {
+      "label": "H4_rhomb_s2.6_a60",
+      "Z_list": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "coords_bohr": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          2.6,
+          0.0,
+          0.0
+        ],
+        [
+          1.3000000000000003,
+          2.25166604983954,
+          0.0
+        ],
+        [
+          3.9000000000000004,
+          2.25166604983954,
+          0.0
+        ]
+      ],
+      "enuc": 2.145134718919087,
+      "norm": 3.538359685378209,
+      "E0_fci": -1.9160763190147823,
+      "E_lb_t12": -1.9233440640514774,
+      "gap_raw_mha": 7.267745036695139,
+      "gap_frob_mha": 2.0539870682814154,
+      "min_dist_bohr": 2.5999999999999996,
+      "min_eig_S": 0.5600242891274417
+    },
+    "winner_raw_fcidump": "experiments/discovered_mol3d_k4_worst_raw.fcidump",
+    "elapsed_sec": 83.47231197357178
+  },
+  "k5_coulomb_t1_minus_t2_weyl_mha": -0.029074679955387595,
+  "winners": {
+    "coulomb_k4_r1": {
+      "name": "M1a K=4 R=1 Coulomb PSD",
+      "tag": "coulomb_k4_r1",
+      "K": 4,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "fcidump_path": "experiments/discovered_coulomb_k4_r1.fcidump",
+      "E0_fci": -0.3803286836680097,
+      "E1_fci": -0.3798744467226346,
+      "gap_fci": 0.0004542369453751083,
+      "S1_fci": 1.601641900288703,
+      "min_eig_V_tilde": -5.655984110385554e-17,
+      "min_eig_V_unweighted": -1.9650650739778232e-17,
+      "V_tilde_rank": 1,
+      "eri_norm_frac": 0.9691974508932556,
+      "eri_offdiag_frac": 0.7235227461627136,
+      "gap_fci_t12_mha": 112.69469972966023,
+      "ratio_to_hunt3a": 1.1829638861998224,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -0.49725894951538546,
+          "E_primal": -0.4972538536813378,
+          "E_ub": -0.3803286836680091,
+          "gap_to_FCI_mha": 116.93026584737576,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -0.49298870781617166,
+          "E_primal": -0.49298254354178617,
+          "E_ub": -0.3803286836680091,
+          "gap_to_FCI_mha": 112.66002414816195,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -0.4929912874301635,
+            "E_lb_weyl": -0.49298870781617166,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -0.4930148573450435,
+          "E_primal": -0.4929838488692745,
+          "E_ub": -0.3803286836680091,
+          "gap_to_FCI_mha": 112.68617367703382,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -0.49302338339766993,
+          "E_primal": -0.4929841607893835,
+          "E_ub": -0.3803286836680091,
+          "gap_to_FCI_mha": 112.69469972966023,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -0.49303164064303706,
+            "E_lb_weyl": -0.49302338339766993,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        }
+      }
+    },
+    "coulomb_k4_r2": {
+      "name": "M1a K=4 R=2 Coulomb PSD",
+      "tag": "coulomb_k4_r2",
+      "K": 4,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "fcidump_path": "experiments/discovered_coulomb_k4_r2.fcidump",
+      "E0_fci": -0.4795814962520167,
+      "E1_fci": -0.4782364744358463,
+      "gap_fci": 0.0013450218161703553,
+      "S1_fci": 4.087060921961383,
+      "min_eig_V_tilde": -9.192112320073975e-17,
+      "min_eig_V_unweighted": -6.129377838657663e-17,
+      "V_tilde_rank": 2,
+      "eri_norm_frac": 0.9800571603650274,
+      "eri_offdiag_frac": 0.5676392320149218,
+      "gap_fci_t12_mha": 71.84990615843483,
+      "ratio_to_hunt3a": 0.7542133251711791,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -0.5754257806427368,
+          "E_primal": -0.5754246366089095,
+          "E_ub": -0.47958149625201685,
+          "gap_to_FCI_mha": 95.84428439072006,
+          "iters": 1052,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -0.5566848831514173,
+          "E_primal": -0.5566841835848465,
+          "E_ub": -0.47958149625201685,
+          "gap_to_FCI_mha": 77.1033868994006,
+          "iters": 1089,
+          "exact_verify": {
+            "E_lb_int_chol": -0.55668757598194,
+            "E_lb_weyl": -0.5566848831514173,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -0.5514179111862346,
+          "E_primal": -0.5514080999063726,
+          "E_ub": -0.47958149625201685,
+          "gap_to_FCI_mha": 71.83641493421794,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -0.5514314024104515,
+          "E_primal": -0.5514285310800491,
+          "E_ub": -0.47958149625201685,
+          "gap_to_FCI_mha": 71.84990615843483,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -0.551440557437236,
+            "E_lb_weyl": -0.5514314024104515,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        }
+      }
+    },
+    "coulomb_k4_r4": {
+      "name": "M1a K=4 R=4 Coulomb PSD",
+      "tag": "coulomb_k4_r4",
+      "K": 4,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "fcidump_path": "experiments/discovered_coulomb_k4_r4.fcidump",
+      "E0_fci": -0.5749813058673904,
+      "E1_fci": -0.5717339390272237,
+      "gap_fci": 0.0032473668401666878,
+      "S1_fci": 5.492602019352805,
+      "min_eig_V_tilde": -2.5071846024747083e-17,
+      "min_eig_V_unweighted": -5.932403321612019e-17,
+      "V_tilde_rank": 4,
+      "eri_norm_frac": 0.9791560392115306,
+      "eri_offdiag_frac": 0.4652476567159528,
+      "gap_fci_t12_mha": 102.39176816047124,
+      "ratio_to_hunt3a": 1.07481331658496,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -0.7307597421774228,
+          "E_primal": -0.7307589627757465,
+          "E_ub": -0.5749813058673907,
+          "gap_to_FCI_mha": 155.77843631003242,
+          "iters": 381,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -0.6930487939810897,
+          "E_primal": -0.6930484429284793,
+          "E_ub": -0.5749813058673907,
+          "gap_to_FCI_mha": 118.06748811369927,
+          "iters": 686,
+          "exact_verify": {
+            "E_lb_int_chol": -0.693051550135176,
+            "E_lb_weyl": -0.6930487939810897,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -0.6773732267437939,
+          "E_primal": -0.6773725106965226,
+          "E_ub": -0.5749813058673907,
+          "gap_to_FCI_mha": 102.39192087640347,
+          "iters": 2432,
+          "exact_verify": null
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -0.6773730740278616,
+          "E_primal": -0.6773725171456414,
+          "E_ub": -0.5749813058673907,
+          "gap_to_FCI_mha": 102.39176816047124,
+          "iters": 2935,
+          "exact_verify": {
+            "E_lb_int_chol": -0.6773823067584086,
+            "E_lb_weyl": -0.6773730740278616,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        }
+      }
+    },
+    "coulomb_k4_r10": {
+      "name": "M1a K=4 R=10 Coulomb PSD",
+      "tag": "coulomb_k4_r10",
+      "K": 4,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "fcidump_path": "experiments/discovered_coulomb_k4_r10.fcidump",
+      "E0_fci": -0.6111941797736099,
+      "E1_fci": -0.605282799200247,
+      "gap_fci": 0.005911380573362934,
+      "S1_fci": 5.518974549697141,
+      "min_eig_V_tilde": 0.00014049378691747606,
+      "min_eig_V_unweighted": 9.07890960236758e-05,
+      "V_tilde_rank": 10,
+      "eri_norm_frac": 0.9849297840037508,
+      "eri_offdiag_frac": 0.5519036391788972,
+      "gap_fci_t12_mha": 120.49136880074273,
+      "ratio_to_hunt3a": 1.2648060488380557,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -0.781236666175826,
+          "E_primal": -0.7812358628240444,
+          "E_ub": -0.6111941797736101,
+          "gap_to_FCI_mha": 170.0424864022161,
+          "iters": 237,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -0.7455166027132314,
+          "E_primal": -0.7455164110770995,
+          "E_ub": -0.6111941797736101,
+          "gap_to_FCI_mha": 134.32242293962148,
+          "iters": 918,
+          "exact_verify": {
+            "E_lb_int_chol": -0.7455192676151525,
+            "E_lb_weyl": -0.7455166027132314,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -0.7316845342610879,
+          "E_primal": -0.731684258424735,
+          "E_ub": -0.6111941797736101,
+          "gap_to_FCI_mha": 120.49035448747803,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -0.7316855485743526,
+          "E_primal": -0.7316887339685327,
+          "E_ub": -0.6111941797736101,
+          "gap_to_FCI_mha": 120.49136880074273,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -0.7316939409342057,
+            "E_lb_weyl": -0.7316855485743526,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        }
+      }
+    },
+    "coulomb_k5_adv": {
+      "name": "M1b K=5 R=15 Coulomb PSD",
+      "tag": "coulomb_k5_adv",
+      "K": 5,
+      "nelec": 5,
+      "two_s": 1,
+      "mode": "b",
+      "fcidump_path": "experiments/discovered_coulomb_k5_adv.fcidump",
+      "E0_fci": -0.6939384859444582,
+      "E1_fci": -0.6905267169527031,
+      "gap_fci": 0.003411768991755104,
+      "S1_fci": 4.959385715355594,
+      "min_eig_V_tilde": 3.530368971791686e-05,
+      "min_eig_V_unweighted": 2.2807835765272975e-05,
+      "V_tilde_rank": 15,
+      "eri_norm_frac": 0.9934665280325055,
+      "eri_offdiag_frac": 0.42682536550368644,
+      "gap_fci_t12_mha": 76.430153253923,
+      "ratio_to_hunt3a": 0.8022924887594565,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -0.9063914908025558,
+          "E_primal": -0.9066688608924623,
+          "E_ub": -0.7027346585041625,
+          "gap_to_FCI_mha": 212.4530048580976,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -0.8098792570267866,
+          "E_primal": -0.8103577085083888,
+          "E_ub": -0.7027346585041625,
+          "gap_to_FCI_mha": 115.94077108232848,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -0.8098874480194683,
+            "E_lb_weyl": -0.8098792570267866,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -0.7754593572714886,
+          "E_primal": -0.7755934310512634,
+          "E_ub": -0.7027346585041625,
+          "gap_to_FCI_mha": 81.52087132703045,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -0.7703686391983812,
+          "E_primal": -0.7706604052340092,
+          "E_ub": -0.7027346585041625,
+          "gap_to_FCI_mha": 76.430153253923,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -0.7704064376260426,
+            "E_lb_weyl": -0.7703686391983812,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        }
+      }
+    },
+    "coulomb_k5_t1gt2": {
+      "name": "M1b K=5 T1>T2 Coulomb PSD",
+      "tag": "coulomb_k5_t1gt2",
+      "K": 5,
+      "nelec": 5,
+      "two_s": 1,
+      "mode": "b",
+      "fcidump_path": "experiments/discovered_coulomb_k5_t1gt2.fcidump",
+      "E0_fci": -1.2073511363650598,
+      "E1_fci": -0.8660952405781643,
+      "gap_fci": 0.3412558957868954,
+      "S1_fci": 0.1689266117069191,
+      "min_eig_V_tilde": 0.000573059787434695,
+      "min_eig_V_unweighted": 0.0003179123592935848,
+      "V_tilde_rank": 15,
+      "eri_norm_frac": 0.9523430968049398,
+      "eri_offdiag_frac": 0.42575698931891726,
+      "gap_fci_t12_mha": 0.017410008569029856,
+      "ratio_to_hunt3a": 0.0001827540376344003,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -1.2079613577799648,
+          "E_primal": -1.2079676864391866,
+          "E_ub": -1.2073511363650595,
+          "gap_to_FCI_mha": 0.6102214149050766,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -1.207398627583015,
+          "E_primal": -1.2074128669767572,
+          "E_ub": -1.2073511363650595,
+          "gap_to_FCI_mha": 0.047491217955331066,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -1.2074069512828285,
+            "E_lb_weyl": -1.207398627583015,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -1.2073695529030597,
+          "E_primal": -1.2073628914903378,
+          "E_ub": -1.2073511363650595,
+          "gap_to_FCI_mha": 0.018416537999943472,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -1.2073685463736288,
+          "E_primal": -1.2073636491418245,
+          "E_ub": -1.2073511363650595,
+          "gap_to_FCI_mha": 0.017410008569029856,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -1.2074021714182332,
+            "E_lb_weyl": -1.2073685463736288,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        }
+      }
+    },
+    "mol3d_k4_worst": {
+      "name": "M2 K=4 3D STO-3G Worst",
+      "tag": "mol3d_k4_worst",
+      "K": 4,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "fcidump_path": "experiments/discovered_mol3d_k4_worst.fcidump",
+      "E0_fci": -1.1477665921631064,
+      "E1_fci": -1.1439886918516151,
+      "gap_fci": 0.003777900311491278,
+      "S1_fci": 3.8082504819070566,
+      "min_eig_V_tilde": 2.281949429792842e-06,
+      "min_eig_V_unweighted": 1.7783816844644689e-06,
+      "V_tilde_rank": 10,
+      "eri_norm_frac": 0.32772454445712906,
+      "eri_offdiag_frac": 0.08496347415206029,
+      "gap_fci_t12_mha": 0.00958151870733559,
+      "ratio_to_hunt3a": 0.0001005778500046249,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -1.152273519656405,
+          "E_primal": -1.1522733231157396,
+          "E_ub": -1.1477665921631082,
+          "gap_to_FCI_mha": 4.506927493298507,
+          "iters": 1853,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -1.1479387006468973,
+          "E_primal": -1.147937613745843,
+          "E_ub": -1.1477665921631082,
+          "gap_to_FCI_mha": 0.17210848379090038,
+          "iters": 2446,
+          "exact_verify": {
+            "E_lb_int_chol": -1.1479411556159245,
+            "E_lb_weyl": -1.1479387006468973,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -1.147777842177052,
+          "E_primal": -1.1477699109738342,
+          "E_ub": -1.1477665921631082,
+          "gap_to_FCI_mha": 0.011250013945529602,
+          "iters": 3500,
+          "exact_verify": null
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -1.1477761736818137,
+          "E_primal": -1.1477707119468465,
+          "E_ub": -1.1477665921631082,
+          "gap_to_FCI_mha": 0.00958151870733559,
+          "iters": 3500,
+          "exact_verify": {
+            "E_lb_int_chol": -1.147782928986784,
+            "E_lb_weyl": -1.1477761736818137,
+            "all_blocks_sdd": true,
+            "scale_D": 100000000
+          }
+        }
+      }
+    }
+  }
+}

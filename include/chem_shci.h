@@ -43,6 +43,29 @@ typedef struct ChemVarResult {
     double elapsed_sec;
 } ChemVarResult;
 
+typedef struct {
+    int K;
+    int na;
+    int nb;
+    int nelec;
+    double occ_a[CHEM_MAX_ORBITALS];
+    double occ_b[CHEM_MAX_ORBITALS];
+    double occ_sorted[2 * CHEM_MAX_ORBITALS];
+    /* Column-major eigenvectors U[:,eig_idx] (or row p, col eig_idx = U[p*K + eig_idx] or [eig_idx*K+p]) */
+    double U_a[CHEM_MAX_ORBITALS * CHEM_MAX_ORBITALS];
+    double U_b[CHEM_MAX_ORBITALS * CHEM_MAX_ORBITALS];
+    double entanglement_entropy;
+    int has_bd_3e3o;
+    double bd_pair_err;
+    double bd_slack;
+    int bd_pinned;
+    int has_bd_2e2o;
+    double bd24_pair_err;
+    /* Indices (spin 0=alpha,1=beta and natural orbital idx) for sorted lambdas l4, l5, l6 */
+    int bd_obs_spin[3];
+    int bd_obs_idx[3];
+} ChemGPCResult;
+
 ChemVarOpts chem_var_opts_default(void);
 void chem_var_result_free(ChemVarResult *vr);
 
@@ -54,6 +77,10 @@ int chem_var_solve(const ChemHam *ham, const ChemVarOpts *opts, ChemVarResult *o
 int chem_var_eval_witness(const ChemHam *ham, int ndet, const uint64_t *dets, const double *coeffs,
                           double *energy_out, char *err, size_t err_sz);
 
+/* Exact full-Fock-space Hamiltonian variance sigma^2 = ||(H - E_var)|psi>||_2^2 */
+int chem_var_eval_variance(const ChemHam *ham, int ndet, const uint64_t *dets, const double *coeffs,
+                           double *e_var_out, double *var_out, char *err, size_t err_sz);
+
 /* Evaluates spin expectation value <S^2> on determinant witness */
 int chem_var_eval_spin_sq(int na, int nb, int ndet, const uint64_t *dets, const double *coeffs,
                           double *s2_out);
@@ -61,6 +88,10 @@ int chem_var_eval_spin_sq(int na, int nb, int ndet, const uint64_t *dets, const 
 /* Computes spin-summed orbital diagonal occupation numbers occ[0..K-1] in [0, 2] */
 int chem_var_compute_rdm1_diag(const ChemHam *ham, int ndet, const uint64_t *dets,
                                const double *coeffs, double *occ_out);
+
+/* Diagonalizes full 1-RDM (alpha & beta), computes entanglement entropy & Borland-Dennis GPC */
+int chem_var_analyze_gpc(const ChemHam *ham, int ndet, const uint64_t *dets, const double *coeffs,
+                         ChemGPCResult *out, char *err, size_t err_sz);
 
 /* Loads external variational witness JSON (standalone dets/coeffs or cert.json variational_witness) */
 int chem_var_load_witness_json(const char *path, const ChemHam *ham, int target_two_s,

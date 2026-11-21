@@ -49,6 +49,9 @@ void chem_ham_finalize(ChemHam *ham);
 /* Loads a standard Molpro/PySCF FCIDUMP file into ham. Returns 0 on success, -1 on error. */
 int chem_fcidump_load(const char *path, ChemHam *ham, char *err, size_t err_sz);
 
+/* Writes ham in canonical 8-fold symmetric Molpro/PySCF FCIDUMP format. Returns 0 on success, -1 on error. */
+int chem_fcidump_write(const char *path, const ChemHam *ham, char *err, size_t err_sz);
+
 #ifdef __cplusplus
 }
 #endif

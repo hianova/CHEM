@@ -1,0 +1,505 @@
+{
+  "hunt_elapsed_sec": 168.0869698524475,
+  "total_elapsed_sec": 219.93725395202637,
+  "winners": {
+    "hunt1a_k5_t1_beats_t2": {
+      "name": "Hunt 1A (K=5): DQG+T1 > DQG+T2",
+      "tag": "hunt1a_k5_t1_beats_t2",
+      "K": 5,
+      "nelec": 5,
+      "two_s": 1,
+      "mode": "b",
+      "fcidump_path": "experiments/discovered_hunt1a_k5_t1_beats_t2.fcidump",
+      "E0_fci": -0.21952139346503588,
+      "E1_fci": -0.21952139177608113,
+      "gap_fci": 1.68895475383124e-09,
+      "S1_fci": 4.112883536933385,
+      "nat_occ_alpha": [
+        0.9566129016115581,
+        0.9207412928285393,
+        0.6800372908922565,
+        0.3156420456170804,
+        0.1269664690505663
+      ],
+      "anatomy": {
+        "h1_frac_norm2": 0.09712791384041859,
+        "eri_frac_norm2": 0.9028720861595816,
+        "h1_diag_frac_of_h1": 0.00014607668919429875,
+        "eri_onsite_frac_of_eri": 0.982098875334177,
+        "eri_coulomb_frac_of_eri": 0.9821367288895275,
+        "eri_exchange_frac_of_eri": 0.00460608659983184,
+        "eri_pairhop_offdiag_frac": 0.008651097910808758,
+        "h1_eigvals": [
+          -0.253923861208553,
+          0.004261987586426904,
+          0.004261988073045576,
+          0.09037171958429019,
+          0.15635603527915035
+        ],
+        "max_abs_h1": 0.07921170830830834,
+        "max_abs_eri": 0.4222576822132728
+      },
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -0.2415785854458429,
+          "E_lb_int_chol": -0.2415846589778613,
+          "E_lb_weyl": -0.2415785854458429,
+          "E_primal": -0.24174035718495152,
+          "E_ub": -0.2195213934650361,
+          "E_ci_cli": -0.2195213934650361,
+          "gap_to_FCI": 0.022057191980807023,
+          "gap_int_chol_to_FCI": 0.02206326551282542,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1a_k5_t1_beats_t2_dqg.json",
+          "iters": 3500
+        },
+        "DQG+T1": {
+          "E_lb_cert": -0.2257224260980047,
+          "E_lb_int_chol": -0.22573093305268163,
+          "E_lb_weyl": -0.2257224260980047,
+          "E_primal": -0.22586181535952782,
+          "E_ub": -0.2195213934650361,
+          "E_ci_cli": -0.2195213934650361,
+          "gap_to_FCI": 0.0062010326329688115,
+          "gap_int_chol_to_FCI": 0.0062095395876457515,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1a_k5_t1_beats_t2_t1.json",
+          "iters": 3500
+        },
+        "DQG+T2": {
+          "E_lb_cert": -0.22613200068576675,
+          "E_lb_int_chol": -0.2261642607167007,
+          "E_lb_weyl": -0.22613200068576675,
+          "E_primal": -0.22625914689031934,
+          "E_ub": -0.2195213934650361,
+          "E_ci_cli": -0.2195213934650361,
+          "gap_to_FCI": 0.006610607220730869,
+          "gap_int_chol_to_FCI": 0.006642867251664825,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1a_k5_t1_beats_t2_t2.json",
+          "iters": 3500
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -0.22338183934261338,
+          "E_lb_int_chol": -0.22341722216535398,
+          "E_lb_weyl": -0.22338183934261338,
+          "E_primal": -0.2236006135182459,
+          "E_ub": -0.2195213934650361,
+          "E_ci_cli": -0.2195213934650361,
+          "gap_to_FCI": 0.003860445877577501,
+          "gap_int_chol_to_FCI": 0.003895828700318099,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1a_k5_t1_beats_t2_t12.json",
+          "iters": 3500
+        }
+      }
+    },
+    "hunt1b_k4_t1_beats_t2": {
+      "name": "Hunt 1B (K=4 4e4o): DQG+T1 > DQG+T2",
+      "tag": "hunt1b_k4_t1_beats_t2",
+      "K": 4,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "fcidump_path": "experiments/discovered_hunt1b_k4_t1_beats_t2.fcidump",
+      "E0_fci": -2.058503801081184,
+      "E1_fci": -1.1616458081864576,
+      "gap_fci": 0.8968579928947265,
+      "S1_fci": 0.16666039439576047,
+      "nat_occ_alpha": [
+        0.9982408082748141,
+        0.9955639647052806,
+        0.003361819041797473,
+        0.0028334079781091397
+      ],
+      "anatomy": {
+        "h1_frac_norm2": 0.30127234902163097,
+        "eri_frac_norm2": 0.6987276509783693,
+        "h1_diag_frac_of_h1": 0.3430507339078436,
+        "eri_onsite_frac_of_eri": 0.07001706068226159,
+        "eri_coulomb_frac_of_eri": 0.17450675091028903,
+        "eri_exchange_frac_of_eri": 0.04043795888744643,
+        "eri_pairhop_offdiag_frac": 0.7446173313148181,
+        "h1_eigvals": [
+          -0.4114953080825102,
+          -0.05814091924570452,
+          0.1301220514669241,
+          0.3341135221433199
+        ],
+        "max_abs_h1": 0.2741445503043872,
+        "max_abs_eri": 0.14607571508243225
+      },
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -2.06410808226569,
+          "E_lb_int_chol": -2.0641104623270152,
+          "E_lb_weyl": -2.06410808226569,
+          "E_primal": -2.0641272797455805,
+          "E_ub": -2.058503801081184,
+          "E_ci_cli": -2.058503801081184,
+          "gap_to_FCI": 0.005604281184505844,
+          "gap_int_chol_to_FCI": 0.0056066612458312015,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1b_k4_t1_beats_t2_dqg.json",
+          "iters": 3500
+        },
+        "DQG+T1": {
+          "E_lb_cert": -2.0585458818018383,
+          "E_lb_int_chol": -2.058548377423419,
+          "E_lb_weyl": -2.0585458818018383,
+          "E_primal": -2.058533693137148,
+          "E_ub": -2.058503801081184,
+          "E_ci_cli": -2.058503801081184,
+          "gap_to_FCI": 4.2080720654258386e-05,
+          "gap_int_chol_to_FCI": 4.4576342234758926e-05,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1b_k4_t1_beats_t2_t1.json",
+          "iters": 3500
+        },
+        "DQG+T2": {
+          "E_lb_cert": -2.0585164778356972,
+          "E_lb_int_chol": -2.058524959634291,
+          "E_lb_weyl": -2.0585164778356972,
+          "E_primal": -2.058512314982436,
+          "E_ub": -2.058503801081184,
+          "E_ci_cli": -2.058503801081184,
+          "gap_to_FCI": 1.2676754513218924e-05,
+          "gap_int_chol_to_FCI": 2.1158553106914724e-05,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1b_k4_t1_beats_t2_t2.json",
+          "iters": 3500
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -2.0585157976037207,
+          "E_lb_int_chol": -2.058524553908795,
+          "E_lb_weyl": -2.0585157976037207,
+          "E_primal": -2.0585122862342553,
+          "E_ub": -2.058503801081184,
+          "E_ci_cli": -2.058503801081184,
+          "gap_to_FCI": 1.1996522536694698e-05,
+          "gap_int_chol_to_FCI": 2.075282761104802e-05,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt1b_k4_t1_beats_t2_t12.json",
+          "iters": 3500
+        }
+      }
+    },
+    "hunt2_k5_strict4tier": {
+      "name": "Hunt 2 (K=5): Strict 4-Tier",
+      "tag": "hunt2_k5_strict4tier",
+      "K": 5,
+      "nelec": 5,
+      "two_s": 1,
+      "mode": "b",
+      "fcidump_path": "experiments/discovered_hunt2_k5_strict4tier.fcidump",
+      "E0_fci": -1.0230324062454512,
+      "E1_fci": -0.9879415196314687,
+      "gap_fci": 0.03509088661398252,
+      "S1_fci": 2.4262040198253043,
+      "nat_occ_alpha": [
+        0.9644489103705678,
+        0.9580988481214829,
+        0.9086391870415428,
+        0.12645274242473967,
+        0.04236031204166924
+      ],
+      "anatomy": {
+        "h1_frac_norm2": 0.06277727719447619,
+        "eri_frac_norm2": 0.937222722805524,
+        "h1_diag_frac_of_h1": 0.3670837553843798,
+        "eri_onsite_frac_of_eri": 0.033227725631393,
+        "eri_coulomb_frac_of_eri": 0.14170224193153522,
+        "eri_exchange_frac_of_eri": 0.033246338607169953,
+        "eri_pairhop_offdiag_frac": 0.7918050808541248,
+        "h1_eigvals": [
+          -0.11735745875825396,
+          -0.06079570203500082,
+          0.03005147924089242,
+          0.1295852357598269,
+          0.16617148356699651
+        ],
+        "max_abs_h1": 0.12249187239047808,
+        "max_abs_eri": 0.14337238817886266
+      },
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -1.285323224888771,
+          "E_lb_int_chol": -1.2853294682933079,
+          "E_lb_weyl": -1.285323224888771,
+          "E_primal": -1.2863066343854423,
+          "E_ub": -1.0230324062454517,
+          "E_ci_cli": -1.0230324062454517,
+          "gap_to_FCI": 0.2622908186433197,
+          "gap_int_chol_to_FCI": 0.26229706204785663,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt2_k5_strict4tier_dqg.json",
+          "iters": 3500
+        },
+        "DQG+T1": {
+          "E_lb_cert": -1.0727119973656585,
+          "E_lb_int_chol": -1.0727207210457308,
+          "E_lb_weyl": -1.0727119973656585,
+          "E_primal": -1.0733630840331392,
+          "E_ub": -1.0230324062454517,
+          "E_ci_cli": -1.0230324062454517,
+          "gap_to_FCI": 0.049679591120207256,
+          "gap_int_chol_to_FCI": 0.049688314800279576,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt2_k5_strict4tier_t1.json",
+          "iters": 3500
+        },
+        "DQG+T2": {
+          "E_lb_cert": -1.0890062623325187,
+          "E_lb_int_chol": -1.0890438384309027,
+          "E_lb_weyl": -1.0890062623325187,
+          "E_primal": -1.0894256267985576,
+          "E_ub": -1.0230324062454517,
+          "E_ci_cli": -1.0230324062454517,
+          "gap_to_FCI": 0.06597385608706752,
+          "gap_int_chol_to_FCI": 0.06601143218545147,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt2_k5_strict4tier_t2.json",
+          "iters": 3500
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -1.0625099146102897,
+          "E_lb_int_chol": -1.0625493902428824,
+          "E_lb_weyl": -1.0625099146102897,
+          "E_primal": -1.0629140262741545,
+          "E_ub": -1.0230324062454517,
+          "E_ci_cli": -1.0230324062454517,
+          "gap_to_FCI": 0.03947750836483843,
+          "gap_int_chol_to_FCI": 0.0395169839974312,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt2_k5_strict4tier_t12.json",
+          "iters": 3500
+        }
+      }
+    },
+    "hunt3a_k4_adversary": {
+      "name": "Hunt 3A (K=4 4e4o): T12 Adversary",
+      "tag": "hunt3a_k4_adversary",
+      "K": 4,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "fcidump_path": "experiments/discovered_hunt3a_k4_adversary.fcidump",
+      "E0_fci": -0.9953024364312479,
+      "E1_fci": -0.8969624074813278,
+      "gap_fci": 0.09834002894992011,
+      "S1_fci": 5.387594089141053,
+      "nat_occ_alpha": [
+        0.6012186167117262,
+        0.5964909453584817,
+        0.4053277754567354,
+        0.3969626624730545
+      ],
+      "anatomy": {
+        "h1_frac_norm2": 0.07040827797199989,
+        "eri_frac_norm2": 0.9295917220280001,
+        "h1_diag_frac_of_h1": 0.19859502786982577,
+        "eri_onsite_frac_of_eri": 0.07523832781498296,
+        "eri_coulomb_frac_of_eri": 0.1333519359259792,
+        "eri_exchange_frac_of_eri": 0.02911739851220747,
+        "eri_pairhop_offdiag_frac": 0.8084132670496059,
+        "h1_eigvals": [
+          -0.16851701395166901,
+          -0.026030763733602736,
+          0.09695339268094964,
+          0.17869732221807844
+        ],
+        "max_abs_h1": 0.14218155511807853,
+        "max_abs_eri": 0.19548677656078642
+      },
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -1.2071467826406626,
+          "E_lb_int_chol": -1.207149098854247,
+          "E_lb_weyl": -1.2071467826406626,
+          "E_primal": -1.207146593967253,
+          "E_ub": -0.9953024364312482,
+          "E_ci_cli": -0.9953024364312482,
+          "gap_to_FCI": 0.2118443462094146,
+          "gap_int_chol_to_FCI": 0.2118466624229991,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3a_k4_adversary_dqg.json",
+          "iters": 1716
+        },
+        "DQG+T1": {
+          "E_lb_cert": -1.093763035008497,
+          "E_lb_int_chol": -1.093765838027679,
+          "E_lb_weyl": -1.093763035008497,
+          "E_primal": -1.0937578127523406,
+          "E_ub": -0.9953024364312482,
+          "E_ci_cli": -0.9953024364312482,
+          "gap_to_FCI": 0.09846059857724909,
+          "gap_int_chol_to_FCI": 0.09846340159643097,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3a_k4_adversary_t1.json",
+          "iters": 3500
+        },
+        "DQG+T2": {
+          "E_lb_cert": -1.0905677605820896,
+          "E_lb_int_chol": -1.090576796246984,
+          "E_lb_weyl": -1.0905677605820896,
+          "E_primal": -1.0905792019494598,
+          "E_ub": -0.9953024364312482,
+          "E_ci_cli": -0.9953024364312482,
+          "gap_to_FCI": 0.09526532415084166,
+          "gap_int_chol_to_FCI": 0.09527435981573595,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3a_k4_adversary_t2.json",
+          "iters": 3500
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -1.0905679125559853,
+          "E_lb_int_chol": -1.0905773689344662,
+          "E_lb_weyl": -1.0905679125559853,
+          "E_primal": -1.090582594947604,
+          "E_ub": -0.9953024364312482,
+          "E_ci_cli": -0.9953024364312482,
+          "gap_to_FCI": 0.09526547612473735,
+          "gap_int_chol_to_FCI": 0.09527493250321828,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3a_k4_adversary_t12.json",
+          "iters": 3500
+        }
+      }
+    },
+    "hunt3b_k5_adversary": {
+      "name": "Hunt 3B (K=5 5e5o): T12 Adversary",
+      "tag": "hunt3b_k5_adversary",
+      "K": 5,
+      "nelec": 5,
+      "two_s": 1,
+      "mode": "b",
+      "fcidump_path": "experiments/discovered_hunt3b_k5_adversary.fcidump",
+      "E0_fci": -1.0771237247067356,
+      "E1_fci": -1.0413722359904418,
+      "gap_fci": 0.035751488716293744,
+      "S1_fci": 5.146866062193497,
+      "nat_occ_alpha": [
+        0.9635403289083345,
+        0.8144819127774382,
+        0.5801869069511751,
+        0.4211173095547026,
+        0.22067354180834783
+      ],
+      "anatomy": {
+        "h1_frac_norm2": 0.05431083750366513,
+        "eri_frac_norm2": 0.9456891624963351,
+        "h1_diag_frac_of_h1": 0.3217889542485443,
+        "eri_onsite_frac_of_eri": 0.034077507941261784,
+        "eri_coulomb_frac_of_eri": 0.1709835358557006,
+        "eri_exchange_frac_of_eri": 0.019978926695197262,
+        "eri_pairhop_offdiag_frac": 0.7890586107539048,
+        "h1_eigvals": [
+          -0.15187851627906354,
+          -0.03696624805599508,
+          0.054070815256612635,
+          0.09826969925843636,
+          0.13151678009417567
+        ],
+        "max_abs_h1": 0.10304799131467186,
+        "max_abs_eri": 0.14011439722141142
+      },
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -1.3792829118198005,
+          "E_lb_int_chol": -1.3792892301525608,
+          "E_lb_weyl": -1.3792829118198005,
+          "E_primal": -1.3805696396101894,
+          "E_ub": -1.0771237247067342,
+          "E_ci_cli": -1.0771237247067342,
+          "gap_to_FCI": 0.3021591871130649,
+          "gap_int_chol_to_FCI": 0.3021655054458252,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3b_k5_adversary_dqg.json",
+          "iters": 3500
+        },
+        "DQG+T1": {
+          "E_lb_cert": -1.1429650879091475,
+          "E_lb_int_chol": -1.1429737632795072,
+          "E_lb_weyl": -1.1429650879091475,
+          "E_primal": -1.1433510691743338,
+          "E_ub": -1.0771237247067342,
+          "E_ci_cli": -1.0771237247067342,
+          "gap_to_FCI": 0.06584136320241196,
+          "gap_int_chol_to_FCI": 0.06585003857277161,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3b_k5_adversary_t1.json",
+          "iters": 3500
+        },
+        "DQG+T2": {
+          "E_lb_cert": -1.1272119608722466,
+          "E_lb_int_chol": -1.1272484442355173,
+          "E_lb_weyl": -1.1272119608722466,
+          "E_primal": -1.1275828773917287,
+          "E_ub": -1.0771237247067342,
+          "E_ci_cli": -1.0771237247067342,
+          "gap_to_FCI": 0.05008823616551106,
+          "gap_int_chol_to_FCI": 0.050124719528781725,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3b_k5_adversary_t2.json",
+          "iters": 3500
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -1.1194708852189128,
+          "E_lb_int_chol": -1.1195089469394301,
+          "E_lb_weyl": -1.1194708852189128,
+          "E_primal": -1.1200171316354548,
+          "E_ub": -1.0771237247067342,
+          "E_ci_cli": -1.0771237247067342,
+          "gap_to_FCI": 0.04234716051217724,
+          "gap_int_chol_to_FCI": 0.042385222232694586,
+          "all_blocks_sdd": true,
+          "scale_D": 100000000,
+          "cert_path": "experiments/cert_hunt3b_k5_adversary_t12.json",
+          "iters": 3500
+        }
+      }
+    }
+  },
+  "hunt1a_margin_weyl": 0.00040957458776205713,
+  "hunt1a_margin_int_chol": 0.0004333276640190731,
+  "hunt1b_margin_weyl": -2.940396614103946e-05,
+  "hunt1b_margin_int_chol": -2.3417789127844202e-05,
+  "hunt2_gaps_weyl": [
+    0.1963169625562522,
+    0.026496347722229086,
+    0.03947750836483843
+  ],
+  "hunt2_gaps_int_chol": [
+    0.19628562986240516,
+    0.02649444818802027,
+    0.0395169839974312
+  ],
+  "cert_lean_source": "hunt3a_k4_adversary",
+  "cert_lean_path": "experiments/CertDiscoveredT1.lean",
+  "emit_lean": {
+    "ok": true,
+    "out_lean": "/Users/kuangtalin/Documents/CHEM/experiments/CertDiscoveredT1.lean",
+    "message": "EMITTED /Users/kuangtalin/Documents/CHEM/experiments/CertDiscoveredT1.lean (8 blocks, D=1000000, E_lb=-1.09380324)"
+  },
+  "lean_axioms_stdout": "'CertDiscoveredT1.molecule_bracket_valid' does not depend on any axioms\n'CertDiscoveredT1.block_0_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.block_1_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.block_2_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.block_3_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.block_4_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.block_5_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.block_6_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.block_7_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertDiscoveredT1.molecule_lower_bound_sound' depends on axioms: [propext, Classical.choice, Quot.sound]",
+  "leanchecker_stdout": ""
+}

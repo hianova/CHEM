@@ -477,6 +477,26 @@ def main():
         write_fcidump(path, K4, nel4, 0, ep, Hm, Em)
         print(f"Generated {path} (K={K4}, nelec={nel4}, fixed-MO Hellmann-Feynman dy={dy:+.3f})")
 
+    # 9. 4-site Hubbard Mott transition chain (U = 0.5..12.0) & frustrated ring (U = 6.0)
+    def gen_hubbard4(fname, U, diag_t=0.0):
+        Kh, nelh = 4, 4
+        h1h = np.zeros((Kh, Kh))
+        erih = np.zeros((Kh, Kh, Kh, Kh))
+        for i in range(Kh - 1):
+            h1h[i, i + 1] = h1h[i + 1, i] = -1.0
+        if abs(diag_t) > 0.0:
+            h1h[0, 3] = h1h[3, 0] = -1.0
+            h1h[0, 2] = h1h[2, 0] = diag_t
+        for i in range(Kh):
+            erih[i, i, i, i] = U
+        p_out = os.path.join(args.out_dir, f"{fname}.fcidump")
+        write_fcidump(p_out, Kh, nelh, 0, 0.0, h1h, erih)
+        print(f"Generated {p_out} (K={Kh}, nelec={nelh}, MS2=0, U={U:.1f})")
+
+    for u_val in (0.5, 2.0, 4.0, 8.0, 12.0):
+        gen_hubbard4(f"hubbard4_u{u_val}", u_val)
+    gen_hubbard4("hubbard4_frust_u6", 6.0, diag_t=-0.8)
+
 
 if __name__ == "__main__":
     main()

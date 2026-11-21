@@ -1853,6 +1853,330 @@ int chem_eval_observable_witness(const ChemHam *ham, const ChemObservable *obs,
     return 0;
 }
 
+typedef struct {
+    double val;
+    int spin;
+    int eig_idx;
+} GpcOccEntry;
+
+static int cmp_gpc_desc(const void *a, const void *b) {
+    const GpcOccEntry *ea = (const GpcOccEntry *)a;
+    const GpcOccEntry *eb = (const GpcOccEntry *)b;
+    if (ea->val > eb->val) return -1;
+    if (ea->val < eb->val) return 1;
+    return 0;
+}
+
+int chem_var_analyze_gpc(const ChemHam *ham, int ndet, const uint64_t *dets, const double *coeffs,
+                         ChemGPCResult *out, char *err, size_t err_sz) {
+    if (!ham || ndet <= 0 || !dets || !coeffs || !out) {
+        shci_set_err(err, err_sz, "invalid argument to chem_var_analyze_gpc");
+        return -1;
+    }
+    memset(out, 0, sizeof(*out));
+    int K = ham->K;
+    out->K = K;
+    out->na = ham->na;
+    out->nb = ham->nb;
+    out->nelec = ham->nelec;
+
+    double Ga[CHEM_MAX_ORBITALS * CHEM_MAX_ORBITALS] = {0};
+    double Gb[CHEM_MAX_ORBITALS * CHEM_MAX_ORBITALS] = {0};
+    double norm2 = 0.0;
+    for (int i = 0; i < ndet; i++) {
+        double ci = coeffs[i];
+        norm2 += ci * ci;
+        if (fabs(ci) < 1e-16) continue;
+        double w = ci * ci;
+        uint64_t dI = dets[i];
+        for (int p = 0; p < K; p++) {
+            if ((dI >> (unsigned)(2 * p)) & UINT64_C(1)) Ga[p * K + p] += w;
+            if ((dI >> (unsigned)(2 * p + 1)) & UINT64_C(1)) Gb[p * K + p] += w;
+        }
+        for (int j = 0; j < i; j++) {
+            double cj = coeffs[j];
+            if (fabs(cj) < 1e-16) continue;
+            uint64_t dJ = dets[j];
+            uint64_t diff = dI ^ dJ;
+            if (searu_popcnt64(diff) == 2U) {
+                int p_so = (int)searu_ctz64(dI & diff);
+                int q_so = (int)searu_ctz64(dJ & diff);
+                if ((p_so & 1) == (q_so & 1)) {
+                    int sgn = jw_par(dJ, q_so) * jw_par(dJ ^ (UINT64_C(1) << (unsigned)q_so), p_so);
+                    double val = (double)sgn * ci * cj;
+                    int p = p_so >> 1, q = q_so >> 1;
+                    double *G = ((p_so & 1) == 0) ? Ga : Gb;
+                    G[p * K + q] += val;
+                    G[q * K + p] += val;
+                }
+            }
+        }
+    }
+    if (norm2 <= 1e-30) {
+        shci_set_err(err, err_sz, "zero-norm witness in chem_var_analyze_gpc");
+        return -1;
+    }
+    for (int i = 0; i < K * K; i++) {
+        Ga[i] /= norm2;
+        Gb[i] /= norm2;
+    }
+
+    double eva[CHEM_MAX_ORBITALS] = {0}, evb[CHEM_MAX_ORBITALS] = {0};
+    if (sym_eigh_small(K, Ga, eva) != 0 || sym_eigh_small(K, Gb, evb) != 0) {
+        shci_set_err(err, err_sz, "1-RDM diagonalization failed");
+        return -1;
+    }
+
+    /* Reorder descending: eigenvector e_idx for eigenvalue occ[e_idx] sits at row e_idx of U */
+    GpcOccEntry entries[2 * CHEM_MAX_ORBITALS];
+    for (int e_idx = 0; e_idx < K; e_idx++) {
+        int rev = K - 1 - e_idx;
+        out->occ_a[e_idx] = eva[rev];
+        out->occ_b[e_idx] = evb[rev];
+        for (int p = 0; p < K; p++) {
+            out->U_a[e_idx * K + p] = Ga[rev * K + p];
+            out->U_b[e_idx * K + p] = Gb[rev * K + p];
+        }
+        entries[2 * e_idx].val = eva[rev];
+        entries[2 * e_idx].spin = 0;
+        entries[2 * e_idx].eig_idx = e_idx;
+        entries[2 * e_idx + 1].val = evb[rev];
+        entries[2 * e_idx + 1].spin = 1;
+        entries[2 * e_idx + 1].eig_idx = e_idx;
+    }
+    qsort(entries, (size_t)(2 * K), sizeof(GpcOccEntry), cmp_gpc_desc);
+
+    double s1 = 0.0;
+    for (int i = 0; i < 2 * K; i++) {
+        double l = entries[i].val;
+        out->occ_sorted[i] = l;
+        if (l > 1e-14 && l < 1.0 - 1e-14) {
+            s1 -= l * log(l) + (1.0 - l) * log(1.0 - l);
+        }
+    }
+    out->entanglement_entropy = s1;
+
+    if (ham->nelec == 3 && K == 3) {
+        out->has_bd_3e3o = 1;
+        double e0 = fabs(out->occ_sorted[0] + out->occ_sorted[5] - 1.0);
+        double e1 = fabs(out->occ_sorted[1] + out->occ_sorted[4] - 1.0);
+        double e2 = fabs(out->occ_sorted[2] + out->occ_sorted[3] - 1.0);
+        out->bd_pair_err = fmax(e0, fmax(e1, e2));
+        out->bd_slack = out->occ_sorted[4] + out->occ_sorted[5] - out->occ_sorted[3];
+        out->bd_pinned = (fabs(out->bd_slack) < 1e-6) ? 1 : 0;
+        for (int m = 0; m < 3; m++) {
+            out->bd_obs_spin[m] = entries[3 + m].spin;
+            out->bd_obs_idx[m] = entries[3 + m].eig_idx;
+        }
+    } else if (ham->nelec == 2 && K == 2) {
+        out->has_bd_2e2o = 1;
+        double e0 = fabs(out->occ_sorted[0] + out->occ_sorted[3] - 1.0);
+        double e1 = fabs(out->occ_sorted[1] + out->occ_sorted[2] - 1.0);
+        out->bd24_pair_err = fmax(e0, e1);
+    }
+    return 0;
+}
+
+typedef struct {
+    size_t cap;
+    size_t size;
+    uint64_t *keys;
+    double *vals;
+    uint8_t *used;
+} VarHashTable;
+
+static inline size_t var_hash_det(uint64_t x, size_t mask) {
+    x = (x ^ (x >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
+    x = (x ^ (x >> 27)) * UINT64_C(0x94d049bb133111eb);
+    x = x ^ (x >> 31);
+    return (size_t)x & mask;
+}
+
+static int var_ht_init(VarHashTable *ht, size_t cap) {
+    ht->cap = cap;
+    ht->size = 0;
+    ht->keys = (uint64_t *)calloc(cap, sizeof(uint64_t));
+    ht->vals = (double *)calloc(cap, sizeof(double));
+    ht->used = (uint8_t *)calloc(cap, sizeof(uint8_t));
+    if (!ht->keys || !ht->vals || !ht->used) {
+        free(ht->keys); free(ht->vals); free(ht->used);
+        return -1;
+    }
+    return 0;
+}
+
+static void var_ht_free(VarHashTable *ht) {
+    free(ht->keys);
+    free(ht->vals);
+    free(ht->used);
+    memset(ht, 0, sizeof(*ht));
+}
+
+static int var_ht_add(VarHashTable *ht, uint64_t key, double delta) {
+    if (fabs(delta) < 1e-18) return 0;
+    if (ht->size * 10 >= ht->cap * 6) {
+        size_t new_cap = ht->cap * 2;
+        VarHashTable nh;
+        if (var_ht_init(&nh, new_cap) != 0) return -1;
+        size_t nmask = new_cap - 1;
+        for (size_t i = 0; i < ht->cap; i++) {
+            if (ht->used[i]) {
+                size_t slot = var_hash_det(ht->keys[i], nmask);
+                while (nh.used[slot]) slot = (slot + 1) & nmask;
+                nh.used[slot] = 1;
+                nh.keys[slot] = ht->keys[i];
+                nh.vals[slot] = ht->vals[i];
+                nh.size++;
+            }
+        }
+        var_ht_free(ht);
+        *ht = nh;
+    }
+    size_t mask = ht->cap - 1;
+    size_t slot = var_hash_det(key, mask);
+    while (ht->used[slot]) {
+        if (ht->keys[slot] == key) {
+            ht->vals[slot] += delta;
+            return 0;
+        }
+        slot = (slot + 1) & mask;
+    }
+    ht->used[slot] = 1;
+    ht->keys[slot] = key;
+    ht->vals[slot] = delta;
+    ht->size++;
+    return 0;
+}
+
+int chem_var_eval_variance(const ChemHam *ham, int ndet, const uint64_t *dets, const double *coeffs,
+                           double *e_var_out, double *var_out, char *err, size_t err_sz) {
+    if (!ham || ndet <= 0 || !dets || !coeffs || !e_var_out || !var_out) {
+        shci_set_err(err, err_sz, "invalid argument to chem_var_eval_variance");
+        return -1;
+    }
+    double e_var = 0.0;
+    if (chem_var_eval_witness(ham, ndet, dets, coeffs, &e_var, err, err_sz) != 0) return -1;
+
+    double norm2 = 0.0;
+    for (int i = 0; i < ndet; i++) norm2 += coeffs[i] * coeffs[i];
+    if (norm2 <= 1e-30) {
+        shci_set_err(err, err_sz, "zero-norm witness in chem_var_eval_variance");
+        return -1;
+    }
+
+    VarHashTable ht;
+    if (var_ht_init(&ht, 4096) != 0) {
+        shci_set_err(err, err_sz, "out of memory in variance hash table");
+        return -1;
+    }
+
+    int K = ham->K;
+    int K2 = 2 * K;
+    for (int id = 0; id < ndet; id++) {
+        double cJ = coeffs[id];
+        if (fabs(cJ) < 1e-15) continue;
+        uint64_t dJ = dets[id];
+
+        if (var_ht_add(&ht, dJ, cJ * (det_diag_energy(ham, dJ) - e_var)) != 0) {
+            var_ht_free(&ht);
+            shci_set_err(err, err_sz, "OOM in variance hash");
+            return -1;
+        }
+
+        int occ_list[64], vir_a[32], vir_b[32];
+        int nocc = 0, nva = 0, nvb = 0;
+        for (int so = 0; so < K2; so++) {
+            if ((dJ >> (unsigned)so) & UINT64_C(1)) {
+                occ_list[nocc++] = so;
+            } else {
+                if ((so & 1) == 0) vir_a[nva++] = so;
+                else vir_b[nvb++] = so;
+            }
+        }
+
+        /* All spin-conserving single excitations */
+        for (int i = 0; i < nocc; i++) {
+            int r = occ_list[i];
+            int *vlist = ((r & 1) == 0) ? vir_a : vir_b;
+            int nv = ((r & 1) == 0) ? nva : nvb;
+            for (int v = 0; v < nv; v++) {
+                int a = vlist[v];
+                uint64_t dI = dJ ^ (UINT64_C(1) << (unsigned)r) ^ (UINT64_C(1) << (unsigned)a);
+                double mel = slater_condon_mel(ham, dI, dJ);
+                if (fabs(mel) > 1e-15 && var_ht_add(&ht, dI, cJ * mel) != 0) {
+                    var_ht_free(&ht);
+                    shci_set_err(err, err_sz, "OOM in variance hash");
+                    return -1;
+                }
+            }
+        }
+
+        /* All spin-conserving double excitations */
+        for (int i = 0; i < nocc; i++) {
+            int r1 = occ_list[i];
+            int s1 = r1 & 1;
+            for (int j = i + 1; j < nocc; j++) {
+                int r2 = occ_list[j];
+                int s2 = r2 & 1;
+                if (s1 == s2) {
+                    int *vlist = (s1 == 0) ? vir_a : vir_b;
+                    int nv = (s1 == 0) ? nva : nvb;
+                    for (int u = 0; u < nv; u++) {
+                        int a1 = vlist[u];
+                        for (int w = u + 1; w < nv; w++) {
+                            int a2 = vlist[w];
+                            double g = chem_ham_eri(ham, a1 >> 1, r1 >> 1, a2 >> 1, r2 >> 1) -
+                                       chem_ham_eri(ham, a1 >> 1, r2 >> 1, a2 >> 1, r1 >> 1);
+                            if (fabs(g) <= 1e-15) continue;
+                            uint64_t dI = dJ ^ (UINT64_C(1) << (unsigned)r1) ^
+                                          (UINT64_C(1) << (unsigned)r2) ^
+                                          (UINT64_C(1) << (unsigned)a1) ^
+                                          (UINT64_C(1) << (unsigned)a2);
+                            double mel = slater_condon_mel(ham, dI, dJ);
+                            if (var_ht_add(&ht, dI, cJ * mel) != 0) {
+                                var_ht_free(&ht);
+                                shci_set_err(err, err_sz, "OOM in variance hash");
+                                return -1;
+                            }
+                        }
+                    }
+                } else {
+                    int ra = (s1 == 0) ? r1 : r2;
+                    int rb = (s1 == 1) ? r1 : r2;
+                    for (int ua = 0; ua < nva; ua++) {
+                        int aa = vir_a[ua];
+                        for (int ub = 0; ub < nvb; ub++) {
+                            int ab = vir_b[ub];
+                            double g = chem_ham_eri(ham, aa >> 1, ra >> 1, ab >> 1, rb >> 1);
+                            if (fabs(g) <= 1e-15) continue;
+                            uint64_t dI = dJ ^ (UINT64_C(1) << (unsigned)ra) ^
+                                          (UINT64_C(1) << (unsigned)rb) ^
+                                          (UINT64_C(1) << (unsigned)aa) ^
+                                          (UINT64_C(1) << (unsigned)ab);
+                            double mel = slater_condon_mel(ham, dI, dJ);
+                            if (var_ht_add(&ht, dI, cJ * mel) != 0) {
+                                var_ht_free(&ht);
+                                shci_set_err(err, err_sz, "OOM in variance hash");
+                                return -1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    double var_sum = 0.0;
+    for (size_t i = 0; i < ht.cap; i++) {
+        if (ht.used[i]) var_sum += ht.vals[i] * ht.vals[i];
+    }
+    var_ht_free(&ht);
+
+    *e_var_out = e_var;
+    *var_out = var_sum / norm2;
+    return 0;
+}
+
 /* ============================================================================
  * Exact FCI 2-RDM Block Builders (Mode A & Mode B) for Self-Test Verification
  * ============================================================================ */
