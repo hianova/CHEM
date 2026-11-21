@@ -8,7 +8,7 @@ $$E_{\text{LB}} \le E_{\text{exact}} \le E_{\text{UB}}, \qquad O_{\text{LB}} \le
 
 backed by **Zero-FP-Trust per-molecule Lean 4 certificates** (`leanchecker` verified, `0 sorryAx`, `0 Lean.ofReduceBool`), **subspace partial 3-RDM `DQG+T1+T2` tightening**, **entanglement-driven Natural Orbital canonicalization (`--auto-no`)**, **Generalized Pauli Constraints (Borland–Dennis $\mathcal{B}_{3,6} / \mathcal{B}_{2,4}$)**, and **Anytime Early-Veto** filtering against AI/MLIP force-field hallucinations up through `(16e,16o)` active spaces.
 
-For detailed benchmark verification and Frontier 1–3 / Direction C theoretical discoveries, see [CHEM_VERIFICATION_REPORT.md](file:///Users/kuangtalin/Documents/CHEM/CHEM_VERIFICATION_REPORT.md) and [CHEM_DISCOVERY_REPORT.md](file:///Users/kuangtalin/Documents/CHEM/experiments/CHEM_DISCOVERY_REPORT.md).
+For detailed benchmark verification and Frontier 1–4 / Direction C theoretical discoveries, see [CHEM_VERIFICATION_REPORT.md](file:///Users/kuangtalin/Documents/CHEM/CHEM_VERIFICATION_REPORT.md) and [CHEM_DISCOVERY_REPORT.md](file:///Users/kuangtalin/Documents/CHEM/experiments/CHEM_DISCOVERY_REPORT.md).
 
 ---
 
@@ -24,7 +24,7 @@ For detailed benchmark verification and Frontier 1–3 / Direction C theoretical
 3. **Layer 3 — Variational Witness Funnel, GPC Analyzer & Exact Full-Space Variance**
    - Internal RHF/UHF + `SEARU × 2-Jet` orbital rotation $\to$ Jordan–Wigner FCI / spin-projected Selected CI (`SHCI`), external `--witness` JSON ingestion, full $\alpha,\beta$ 1-RDM SVD Generalized Pauli analyzer (`chem_var_analyze_gpc`), and exact full-Fock-space Hamiltonian variance $\sigma^2 = \|(H - E_{\text{var}})|\psi\rangle\|_2^2$ + Eckart ground-state fidelity lower bounds (`chem_var_eval_variance`).
 4. **Layer 4 — Zero-FP-Trust `ChemI128` Cholesky+SDD & Kernel-Checked Lean 4 Certificates**
-   - Emits `.cert.json`, compact binary `.flowchem` (`FLCH0002`, `2.75x–2.91x` smaller), and standalone **per-molecule `.lean` formal proofs** via pure ISO C17 128-bit integer Cholesky+SDD certification (`chem_cert_verify_exact_chol`, `chem_cert_emit_lean`), compiled with `lean -DwarningAsError=true` and audited by `leanchecker` against [lean/ChemCert.lean](file:///Users/kuangtalin/Documents/CHEM/lean/ChemCert.lean) (Theorems `C1–C17`, including `T1` trace bound `C16` and Coulomb Cholesky PSD `C17`, `0 sorryAx`, `0 Lean.ofReduceBool`).
+   - Emits `.cert.json`, compact binary `.flowchem` (`FLCH0002`, `2.75x–2.91x` smaller), and standalone **per-molecule `.lean` formal proofs** via pure ISO C17 128-bit integer Cholesky+SDD certification (`chem_cert_verify_exact_chol`, `chem_cert_emit_lean`), compiled with `lean -DwarningAsError=true` and audited by `leanchecker` against [lean/ChemCert.lean](file:///Users/kuangtalin/Documents/CHEM/lean/ChemCert.lean) (Theorems `C1–C20`, including `T1` trace bound `C16`, Coulomb Cholesky PSD `C17`, and rank-1/$p$-POS obstruction theorems `C18–C20`, `0 sorryAx`, `0 Lean.ofReduceBool`).
 
 ---
 
@@ -51,9 +51,9 @@ CHEM/
 │   ├── test_tools.py                # End-to-end CLI, SDK, ChemFastSession & chem_screener integration tests
 │   └── verify_chem_oracle.py        # Independent NumPy FCI, DQG/T2 adjoints, Mott/GPC/Lean auditor (Gates 1–6)
 ├── benchmarks/                      # 27 FCIDUMP benchmarks ((2e,2o)–(16e,16o))
-├── experiments/                     # Frontier 1–3 & Direction C discovery scripts, JSONs, .xyz trajectories & CHEM_DISCOVERY_REPORT.md
+├── experiments/                     # Frontier 1–4 & Direction C discovery scripts, JSONs, .xyz trajectories & CHEM_DISCOVERY_REPORT.md
 └── lean/
-    └── ChemCert.lean                # Pure-Init Lean 4 Theorems C1–C17 & checkCholeskySDD_sound (0 sorryAx)
+    └── ChemCert.lean                # Pure-Init Lean 4 Theorems C1–C20 & checkCholeskySDD_sound (0 sorryAx)
 ```
 
 ---
@@ -127,8 +127,9 @@ with ChemFastSession.from_fcidump("benchmarks/h4_ry2.0.fcidump", t1=True, t1_orb
 **Verified Highlights** ([CHEM_VERIFICATION_REPORT.md](file:///Users/kuangtalin/Documents/CHEM/CHEM_VERIFICATION_REPORT.md) & [CHEM_DISCOVERY_REPORT.md](file:///Users/kuangtalin/Documents/CHEM/experiments/CHEM_DISCOVERY_REPORT.md)):
 - **Performance & Memory**: `Peak RSS = 49.22 MB` (`< 50 MB`) across full `make verify` through `(16e,16o)` Mode B (`4.874s` SDP / `5.054s` total at 400 iters, 4 threads); precomputed `scr_t2_pairs` + `H_diag_inv` + gated `H_chol` speed up `h12_chain_12e12o` `T2(5)` (`5.702s -> 3.616s` SDP, `1.58x`), `tm_spin_s0_8e8o` `T2(6)` (`4.969s -> 4.154s` SDP), and `n2_stretched_10e8o` `DQG` (`0.577s -> 0.556s` SDP, `Peak RSS = 8.11 MB`); single-pass `chem_screener.py` cuts 5-frame `(8e,6o)` `H2O` trajectory screening from `12.44s` to `8.83s` (`6.74s` with `--fast-veto`).
 - **Matrix-Free Adjoints & Orthogonal Invariance**: `selftest` adjoints `< 1e-14` (`DQG=2.174e-16`, `T2=5.930e-17`, `T1=3.593e-17`); Haar $O(K)$ orthogonal rotation (`seed=42`) invariance recovered to `0.000000 mHa` on `h2o_stretched` (`T1+T2(4)`) and `n2_stretched_10e8o` (`T2(5)`) with `--auto-no`.
-- **Zero-FP-Trust & Lean 4 Formalization**: All benchmark JSON/`.flowchem` certificates pass `cert-verify` & `exact-verify` (`SDD=1`), plus [ChemCert.lean](file:///Users/kuangtalin/Documents/CHEM/lean/ChemCert.lean) Theorems `C1–C17` and [CertDiscoveredT1.lean](file:///Users/kuangtalin/Documents/CHEM/experiments/CertDiscoveredT1.lean) verified by `leanchecker` (`0 sorryAx`, `0 Lean.ofReduceBool`).
+- **Zero-FP-Trust & Lean 4 Formalization**: All benchmark JSON/`.flowchem` certificates pass `cert-verify` & `exact-verify` (`SDD=1`), plus [ChemCert.lean](file:///Users/kuangtalin/Documents/CHEM/lean/ChemCert.lean) Theorems `C1–C20` and [CertDiscoveredT1.lean](file:///Users/kuangtalin/Documents/CHEM/experiments/CertDiscoveredT1.lean) verified by `leanchecker` (`0 sorryAx`, `0 Lean.ofReduceBool`).
 - **Coulomb PSD vs. 3D Molecular Manifold Discovery**: Within the physical Coulomb PSD cone (`V_tilde = B^T B >= 0`, Theorem `C17`), rank-1 and rank-10 Hamiltonians still sustain `112.695` and `120.491 mHa/unit-Frob` `FCI - DQG+T1+T2` gaps (`126.5%` of unconstrained `Hunt 3A`), whereas real 3D STO-3G nuclear-Gaussian geometries (`120` sampled 3D shapes) collapse at convergence to `0.0096 mHa/unit-Frob`.
+- **Frontier 4 Theory Trilogy & Universal $p$-POS Obstruction**: Theorems `C18–C20` prove an exact `112.500 mHa` `K=4` integrality blockade (`DQG < 3-POS (-42.59 mHa) < FCI (-69.91 mHa)`), which generalizes to **`0%` $p$-POS tightening on $K = 2p$ orbitals** (confirmed at `K=6, p=3` with `80.129 mHa` across `DQG/T1/T2/T12`); multi-sector Coulomb PSD search uncovers high-spin **`k5_4e5o_s2` `T1 > T2`** (`+1.957 mHa` intChol / `+1.934 mHa` Weyl, `exact-verify` passed), and kinetic tunneling melts the `112.5 mHa` blockade by `50%` at `tau = 0.0473` and `< 1 mHa` at `tau = 0.3723`.
 
 ---
 

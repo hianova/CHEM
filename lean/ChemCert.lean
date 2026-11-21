@@ -677,6 +677,256 @@ theorem coulomb_psd_cholesky_nonneg
   rw [hEq]
   exact ⟨hPos, rfl⟩
 
+/-- **Theorem C18 (Rank-1 Coulomb Integrality & Pair-Block Energy Identity).**
+For the zero-$h_1$ rank-1 Coulomb model ($\beta = (-1, -1, 2, 2)$, $K=4, N=4$),
+every $(n_A, n_B)$ charge partition with $n_A + n_B = 4$ satisfies the exact
+quadratic energy law $8 H(n_A) = 9(2 n_A - 5)^2 - 33$. Because $2 n_A - 5$ is
+odd for every integer $n_A$, $(2 n_A - 5)^2 \ge 1$ forces $8 H(n_A) \ge -24$
+(attained at $n_A \in \{2, 3\}$), whereas the unquantized relaxation at
+$n_A = 5/2$ attains $-33$, creating an exact $9$-unit ($112.5\text{ mHa/unit-Frob}$)
+DQG/T1/T2 integrality gap. -/
+theorem rank1_coulomb_integrality_gap_exact :
+    (∀ nA nB : Int, nA + nB = 4 →
+      4 * ((-nA + 2 * nB) * (-nA + 2 * nB) - (nA + 4 * nB)) =
+        9 * (2 * nA - 5) * (2 * nA - 5) - 33) ∧
+    (∀ nA : Int, -24 ≤ 9 * (2 * nA - 5) * (2 * nA - 5) - 33) ∧
+    (9 * (2 * (2 : Int) - 5) * (2 * (2 : Int) - 5) - 33 = -24 ∧
+     (-24 : Int) - (-33) = 9) := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro nA nB hsum
+    have hnB : nB = 4 - nA := by omega
+    subst hnB
+    have hs1 : -nA + 2 * (4 - nA) = 8 - 3 * nA := by omega
+    rw [hs1, Int.mul_assoc 9 (2 * nA - 5) (2 * nA - 5)]
+    have hna3 : nA * (3 * nA) = 3 * (nA * nA) := by
+      rw [← Int.mul_assoc, Int.mul_comm nA 3, Int.mul_assoc]
+    have hna2 : nA * (2 * nA) = 2 * (nA * nA) := by
+      rw [← Int.mul_assoc, Int.mul_comm nA 2, Int.mul_assoc]
+    have hsq1 : (8 - 3 * nA) * (8 - 3 * nA) = 64 - 48 * nA + 9 * (nA * nA) := by
+      rw [Int.sub_mul, Int.mul_sub, Int.mul_sub, Int.mul_assoc 3 nA (3 * nA), hna3, ← Int.mul_assoc 3 3 (nA * nA)]
+      omega
+    have hsq2 : (2 * nA - 5) * (2 * nA - 5) = 4 * (nA * nA) - 20 * nA + 25 := by
+      rw [Int.sub_mul, Int.mul_sub, Int.mul_sub, Int.mul_assoc 2 nA (2 * nA), hna2, ← Int.mul_assoc 2 2 (nA * nA)]
+      omega
+    rw [hsq1, hsq2]
+    omega
+  · intro nA
+    rw [Int.mul_assoc 9 (2 * nA - 5) (2 * nA - 5)]
+    let d : Int := 2 * nA - 5
+    have hsq : 1 ≤ d * d := by
+      by_cases hpos : 1 ≤ d
+      · exact Int.mul_le_mul hpos hpos (by decide) (by omega)
+      · have hneg : 1 ≤ -d := by omega
+        have h1 := Int.mul_le_mul hneg hneg (by decide) (by omega)
+        have hsqneg : (-d) * (-d) = d * d := Int.neg_mul_neg d d
+        rw [hsqneg] at h1
+        exact h1
+    change -24 ≤ 9 * (d * d) - 33
+    omega
+  · decide
+
+/-- **Theorem C19 (Full 3-POS Strictly Separates DQG and FCI on Rank-1 Coulomb).**
+Scaling moments by $10^3$ ($m_1 = 5/2$, $m_{2,s} = 1000\, m_2$, $m_{3,s} = 1000\, m_3$):
+1. *(DQG < 3-POS)* Any moment triple satisfying the 3-body localizing PSD inequality
+   $F_3 : 2500\, m_{3,s} \ge m_{2,s}^2$ and the 3-hole inequality
+   $Q_3 : m_{3,s} \le 9\, m_{2,s} - 41000$ forces $m_{2,s} \ge 6345$
+   (near the exact algebraic bound $1000(45 - \sqrt{385})/4 \approx 6344.65$),
+   strictly ruling out the DQG minimum $m_{2,s} = 6250$.
+2. *(3-POS < FCI)* The explicit rational point $(m_{2,s}, m_{3,s}) = (6350, 16130)$
+   satisfies all six 3-POS positivity conditions ($D_3, Q_3, \det F_3, \det E_3,
+   E_3^{\text{mix}}, F_3^{\text{mix}} \ge 0$) while still strictly undershooting
+   the exact FCI second moment $m_{2,\text{FCI},s} = 6500$ ($8 E_{3\text{-POS}} = -29.4 < -24 = 8 E_{\text{FCI}}$). -/
+theorem rank1_coulomb_3pos_strict_separation :
+    (∀ m2_s m3_s : Int,
+      m2_s * m2_s ≤ 2500 * m3_s →
+      m3_s ≤ 9 * m2_s - 41000 →
+      6345 ≤ m2_s) ∧
+    (∃ m2_s m3_s : Int,
+      6250 < m2_s ∧ m2_s < 6500 ∧
+      m2_s * m2_s ≤ 2500 * m3_s ∧
+      m3_s ≤ 9 * m2_s - 41000 ∧
+      0 ≤ m3_s - 3 * m2_s + 5000 ∧
+      0 ≤ 24000 - 65000 + 9 * m2_s - m3_s ∧
+      (10000 - m2_s) * (10000 - m2_s) ≤ 1500 * (4 * m2_s - m3_s) ∧
+      0 ≤ 30000 - 7 * m2_s + m3_s ∧
+      0 ≤ 5 * m2_s - 10000 - m3_s) := by
+  constructor
+  · intro m2_s m3_s hF3 hQ3
+    have hquad : m2_s * m2_s ≤ 22500 * m2_s - 102500000 := by omega
+    by_cases hge : 6345 ≤ m2_s
+    · exact hge
+    · have hmle : m2_s ≤ 6344 := by omega
+      let u : Int := 11250 - m2_s
+      have hu_ge : 4906 ≤ u := by omega
+      have husq_ge : 4906 * 4906 ≤ u * u :=
+        Int.mul_le_mul hu_ge hu_ge (by decide) (by omega)
+      have husq_id : u * u = m2_s * m2_s - 22500 * m2_s + 126562500 := by
+        change (11250 - m2_s) * (11250 - m2_s) = _
+        rw [Int.sub_mul, Int.mul_sub, Int.mul_sub, Int.mul_comm m2_s 11250]
+        omega
+      omega
+  · exact ⟨6350, 16130, by decide⟩
+
+/-- Scaled falling factorial $\prod_{j=0}^{k-1} (x - 2j)$ representing $2^k \prod_{j=0}^{k-1}(x/2 - j)$. -/
+def fall2 (x : Int) : Nat → Int
+  | 0 => 1
+  | k + 1 => fall2 x k * (x - 2 * (k : Int))
+
+theorem fall2_pos (x : Int) (k : Nat) (h : 2 * (k : Int) ≤ x + 1) :
+    0 < fall2 x k := by
+  induction k with
+  | zero => simp [fall2]
+  | succ k ih =>
+    have hk : 2 * (k : Int) ≤ x + 1 := by omega
+    have hlast : 0 < x - 2 * (k : Int) := by omega
+    exact Int.mul_pos (ih hk) hlast
+
+/-- **Theorem C20 (Universal Rank-1 Coulomb PSD Obstruction of Arbitrary $p$-POS).**
+On $K = 2p$ spatial orbitals ($M = 2p$ spin-orbitals per cluster, $N = 2p$ electrons)
+with pure rank-1 Coulomb ERI $\beta = (-(p-1),\dots,-(p-1), p,\dots,p)$ ($h_1 = 0$):
+1. *(Pair-Block Law)* Every integer charge partition $(n_A, n_B)$ with $n_A + n_B = 2p$ satisfies
+   $8 H(n_A) = (2p-1)^2 (2n_A - (2p+1))^2 - (2p-1)(4p^2 - 2p - 1)$.
+2. *(Exact Integer Gap)* Since $2n_A - (2p+1)$ is odd for all $n_A \in \mathbb{Z}$, the FCI ground
+   energy is locked at $n_A \in \{p, p+1\}$, exceeding the DQG relaxed energy at $c = p + 1/2$
+   by $(2p-1)^2$ in $8H$-units.
+3. *(Universal $p$-POS Witness)* At $M = 2p$, $2c = 2p+1$ (matching `K=4,p=2` at $c=5/2$ and
+   `K=6,p=3` at $c=7/2$), the $2^k$-scaled hypergeometric expectations are strictly positive for
+   ALL $(m_1, m_0)$ with $m_1, m_0 \le p$, preserve exact 1-orbital marginal consistency, and
+   annihilate $\text{Var}(n_A)$ across every $p$-body block (0% tightening from $p$-POS).
+4. *(Sharp $(p+1)$-POS Breakdown)* At order $p+1$, $Q_{p+1}$ (`m0 = p+1`) turns strictly negative
+   because $M - c = p - 1/2 < p$. -/
+theorem rank1_coulomb_p_pos_hierarchy_obstruction :
+    (∀ p nA nB : Int, nA + nB = 2 * p →
+      4 * (((-(p - 1)) * nA + p * nB) * ((-(p - 1)) * nA + p * nB)
+           - (((p - 1) * (p - 1)) * nA + (p * p) * nB)) =
+        ((2 * p - 1) * (2 * p - 1)) * ((2 * nA - (2 * p + 1)) * (2 * nA - (2 * p + 1)))
+        - (2 * p - 1) * (4 * (p * p) - 2 * p - 1)) ∧
+    (∀ p nA : Int,
+      ((2 * p - 1) * (2 * p - 1)) - (2 * p - 1) * (4 * (p * p) - 2 * p - 1) ≤
+        ((2 * p - 1) * (2 * p - 1)) * ((2 * nA - (2 * p + 1)) * (2 * nA - (2 * p + 1)))
+        - (2 * p - 1) * (4 * (p * p) - 2 * p - 1)) ∧
+    (∀ (p m1 m0 : Nat), m1 ≤ p → m0 ≤ p →
+      0 < fall2 (2 * (p : Int) + 1) m1 ∧
+      0 < fall2 (2 * (p : Int) - 1) m0 ∧
+      0 < fall2 (4 * (p : Int)) (m1 + m0) ∧
+      (2 * (p : Int) + 1 - 2 * (m1 : Int)) + (2 * (p : Int) - 1 - 2 * (m0 : Int)) =
+        2 * (2 * (p : Int) - ((m1 : Int) + (m0 : Int))) ∧
+      2 * (m1 : Int) * (2 * (p : Int) - ((m1 : Int) + (m0 : Int))) +
+        (2 * (p : Int) - ((m1 : Int) + (m0 : Int))) * (2 * (p : Int) + 1 - 2 * (m1 : Int)) =
+        (2 * (p : Int) + 1) * (2 * (p : Int) - ((m1 : Int) + (m0 : Int)))) ∧
+    (∀ p : Nat, fall2 (2 * (p : Int) - 1) (p + 1) < 0) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro p nA nB hsum
+    have hnB : nB = 2 * p - nA := by omega
+    subst hnB
+    let D : Int := 2 * p - 1
+    let X : Int := D * nA
+    let P2 : Int := p * p
+    let P3 : Int := p * P2
+    have hX : X = 2 * (p * nA) - nA := by
+      change (2 * p - 1) * nA = _
+      rw [Int.sub_mul, Int.one_mul, Int.mul_assoc]
+    have hneg1 : -(p - 1) = 1 - p := by omega
+    have hlin : (-(p - 1)) * nA + p * (2 * p - nA) = 2 * P2 - X := by
+      rw [hneg1, Int.sub_mul, Int.one_mul, Int.mul_sub, Int.mul_comm p (2 * p), Int.mul_assoc 2 p p]
+      change nA - p * nA + (2 * P2 - p * nA) = 2 * P2 - X
+      omega
+    have hpm1sq : (p - 1) * (p - 1) = P2 - 2 * p + 1 := by
+      rw [Int.sub_mul, Int.mul_sub, Int.mul_sub, Int.one_mul, Int.mul_one]
+      change P2 - p - (p - 1) = P2 - 2 * p + 1
+      omega
+    have hquad_lin : ((p - 1) * (p - 1)) * nA + P2 * (2 * p - nA) = 2 * P3 - X := by
+      rw [hpm1sq, Int.add_mul, Int.sub_mul, Int.one_mul, Int.mul_assoc 2 p nA,
+          Int.mul_sub, Int.mul_comm P2 (2 * p), Int.mul_assoc 2 p P2]
+      change P2 * nA - 2 * (p * nA) + nA + (2 * P3 - P2 * nA) = 2 * P3 - X
+      omega
+    have hDp : D * (2 * p + 1) = 4 * P2 - 1 := by
+      change (2 * p - 1) * (2 * p + 1) = 4 * P2 - 1
+      rw [Int.sub_mul, Int.mul_add, Int.mul_add, Int.one_mul, Int.mul_one,
+          Int.mul_assoc 2 p (2 * p), Int.mul_comm p (2 * p), Int.mul_assoc 2 p p, ← Int.mul_assoc 2 2 P2]
+      omega
+    have hDX : D * (2 * nA - (2 * p + 1)) = 2 * X - (4 * P2 - 1) := by
+      rw [Int.mul_sub, ← hDp, Int.mul_comm D (2 * nA), Int.mul_assoc 2 nA D, Int.mul_comm nA D]
+    have hDrhs : (D * D) * ((2 * nA - (2 * p + 1)) * (2 * nA - (2 * p + 1))) =
+        (2 * X - (4 * P2 - 1)) * (2 * X - (4 * P2 - 1)) := by
+      let K : Int := 2 * nA - (2 * p + 1)
+      change (D * D) * (K * K) = _
+      have hre : (D * D) * (K * K) = (D * K) * (D * K) := by
+        rw [Int.mul_assoc D D (K * K), Int.mul_comm D (K * K), Int.mul_assoc K K D,
+            ← Int.mul_assoc D K (K * D), Int.mul_comm K D]
+      rw [hre]
+      exact congrArg (fun z => z * z) hDX
+    have hDrem : D * (4 * P2 - 2 * p - 1) = 8 * P3 - 8 * P2 + 1 := by
+      change (2 * p - 1) * (4 * P2 - 2 * p - 1) = 8 * P3 - 8 * P2 + 1
+      rw [Int.sub_mul, Int.mul_sub, Int.mul_sub, Int.one_mul,
+          Int.mul_assoc 2 p (4 * P2), Int.mul_comm p (4 * P2), Int.mul_assoc 4 P2 p,
+          Int.mul_comm P2 p, ← Int.mul_assoc 2 4 P3,
+          Int.mul_assoc 2 p (2 * p), Int.mul_comm p (2 * p), Int.mul_assoc 2 p p, ← Int.mul_assoc 2 2 P2,
+          Int.mul_one]
+      omega
+    have hLsq : (2 * P2 - X) * (2 * P2 - X) =
+        4 * (P2 * P2) - 4 * (P2 * X) + X * X := by
+      rw [Int.sub_mul, Int.mul_sub, Int.mul_sub,
+          Int.mul_assoc 2 P2 (2 * P2), Int.mul_comm P2 (2 * P2), Int.mul_assoc 2 P2 P2, ← Int.mul_assoc 2 2 (P2 * P2),
+          Int.mul_assoc 2 P2 X, Int.mul_comm X (2 * P2), Int.mul_assoc 2 P2 X]
+      omega
+    have hYsq : (4 * P2 - 1) * (4 * P2 - 1) = 16 * (P2 * P2) - 8 * P2 + 1 := by
+      rw [Int.sub_mul, Int.mul_sub, Int.one_mul, Int.mul_one,
+          Int.mul_assoc 4 P2 (4 * P2), Int.mul_comm P2 (4 * P2), Int.mul_assoc 4 P2 P2, ← Int.mul_assoc 4 4 (P2 * P2)]
+      omega
+    have hXY : (2 * X) * (4 * P2 - 1) = 8 * (P2 * X) - 2 * X := by
+      rw [Int.mul_sub, Int.mul_one, Int.mul_assoc 2 X (4 * P2),
+          Int.mul_comm X (4 * P2), Int.mul_assoc 4 P2 X, ← Int.mul_assoc 2 4 (P2 * X)]
+      omega
+    have hRsq : (2 * X - (4 * P2 - 1)) * (2 * X - (4 * P2 - 1)) =
+        4 * (X * X) - 16 * (P2 * X) + 4 * X + 16 * (P2 * P2) - 8 * P2 + 1 := by
+      let Y : Int := 4 * P2 - 1
+      change (2 * X - Y) * (2 * X - Y) = _
+      rw [Int.sub_mul, Int.mul_sub (2 * X) (2 * X) Y, Int.mul_sub Y (2 * X) Y, Int.mul_comm Y (2 * X),
+          Int.mul_assoc 2 X (2 * X), Int.mul_comm X (2 * X), Int.mul_assoc 2 X X, ← Int.mul_assoc 2 2 (X * X)]
+      change 2 * 2 * (X * X) - (2 * X) * (4 * P2 - 1) - ((2 * X) * (4 * P2 - 1) - (4 * P2 - 1) * (4 * P2 - 1)) = _
+      rw [hXY, hYsq]
+      omega
+    change 4 * (((-(p - 1)) * nA + p * (2 * p - nA)) * ((-(p - 1)) * nA + p * (2 * p - nA))
+             - (((p - 1) * (p - 1)) * nA + P2 * (2 * p - nA))) =
+           (D * D) * ((2 * nA - (2 * p + 1)) * (2 * nA - (2 * p + 1))) - D * (4 * P2 - 2 * p - 1)
+    rw [hlin, hquad_lin, hDrhs, hDrem, hLsq, hRsq]
+    omega
+  · intro p nA
+    let d : Int := 2 * nA - (2 * p + 1)
+    have hsq : 1 ≤ d * d := by
+      by_cases hpos : 1 ≤ d
+      · exact Int.mul_le_mul hpos hpos (by decide) (by omega)
+      · have hneg : 1 ≤ -d := by omega
+        have h1 := Int.mul_le_mul hneg hneg (by decide) (by omega)
+        have hsqneg : (-d) * (-d) = d * d := Int.neg_mul_neg d d
+        rw [hsqneg] at h1
+        exact h1
+    have hD2 : 0 ≤ (2 * p - 1) * (2 * p - 1) := int_sq_nonneg_c (2 * p - 1)
+    have hmul := Int.mul_le_mul_of_nonneg_left hsq hD2
+    rw [Int.mul_one] at hmul
+    change (2 * p - 1) * (2 * p - 1) - (2 * p - 1) * (4 * (p * p) - 2 * p - 1) ≤
+      (2 * p - 1) * (2 * p - 1) * (d * d) - (2 * p - 1) * (4 * (p * p) - 2 * p - 1)
+    omega
+  · intro p m1 m0 hm1 hm0
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · exact fall2_pos (2 * (p : Int) + 1) m1 (by omega)
+    · exact fall2_pos (2 * (p : Int) - 1) m0 (by omega)
+    · exact fall2_pos (4 * (p : Int)) (m1 + m0) (by omega)
+    · omega
+    · let T : Int := 2 * (p : Int) - ((m1 : Int) + (m0 : Int))
+      change 2 * (m1 : Int) * T + T * (2 * (p : Int) + 1 - 2 * (m1 : Int)) =
+        (2 * (p : Int) + 1) * T
+      rw [Int.mul_comm (2 * (m1 : Int)) T, ← Int.mul_add]
+      have hcoef : 2 * (m1 : Int) + (2 * (p : Int) + 1 - 2 * (m1 : Int)) = 2 * (p : Int) + 1 := by omega
+      rw [hcoef, Int.mul_comm T (2 * (p : Int) + 1)]
+  · intro p
+    simp only [fall2]
+    have hpos : 0 < fall2 (2 * (p : Int) - 1) p := fall2_pos (2 * (p : Int) - 1) p (by omega)
+    have hneg : 2 * (p : Int) - 1 - 2 * (p : Int) = -1 := by omega
+    rw [hneg]
+    exact Int.mul_neg_of_pos_of_neg hpos (by decide)
+
 #print axioms mode_a_spin_trace_invariants
 #print axioms anytime_dual_weyl_lower_bound
 #print axioms anytime_early_veto_soundness
@@ -696,5 +946,8 @@ theorem coulomb_psd_cholesky_nonneg
 #print axioms certified_observable_gap_lower_bound
 #print axioms subspace_t1_trace_upper_bound
 #print axioms coulomb_psd_cholesky_nonneg
+#print axioms rank1_coulomb_integrality_gap_exact
+#print axioms rank1_coulomb_3pos_strict_separation
+#print axioms rank1_coulomb_p_pos_hierarchy_obstruction
 
 end ChemCert

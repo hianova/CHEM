@@ -1,0 +1,2153 @@
+{
+  "schema": "chem.exp4.theory_trilogy.v1",
+  "elapsed_sec": 544.5201721191406,
+  "part1_rank1_integrality_and_3pos": {
+    "exact_r1_model": {
+      "name": "rank1_exact_m1m122",
+      "K": 4,
+      "na": 2,
+      "nb": 2,
+      "nelec": 4,
+      "two_s": 0,
+      "mode": "a",
+      "norm": 1.0,
+      "num_rank": 1,
+      "min_eig_Vtilde": -7.702443984636964e-17,
+      "min_eig_Vunw": -7.702443984636964e-17,
+      "h1_frac": 0.0,
+      "eri_frac": 1.0,
+      "eri_offdiag_frac": 0.0,
+      "fci_evals": [
+        -0.3000000000000006,
+        -0.3000000000000005,
+        -0.3000000000000003,
+        -0.3000000000000003
+      ],
+      "fci_E0": -0.3000000000000006,
+      "fci_E1": -0.3000000000000005,
+      "fci_S1": 4.943847044626373,
+      "tiers": {
+        "DQG": {
+          "E_lb_cert": -0.41250095098186207,
+          "E_primal": -0.4125002347043378,
+          "E_ub": -0.3000000000000008,
+          "gap_raw_mha": 112.50095098186146,
+          "gap_frob_mha": 112.50095098186146,
+          "iters": 94,
+          "cert_path": null,
+          "exact_verify": null
+        },
+        "DQG+T1": {
+          "E_lb_cert": -0.41250039983737175,
+          "E_primal": -0.41250009152495465,
+          "E_ub": -0.3000000000000008,
+          "gap_raw_mha": 112.50039983737115,
+          "gap_frob_mha": 112.50039983737115,
+          "iters": 108,
+          "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_rank1_exact_t1.json",
+          "exact_verify": {
+            "E_lb_int_chol": -0.41250285687359467,
+            "E_lb_weyl": -0.41250039983737175,
+            "all_blocks_sdd": 1,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T2": {
+          "E_lb_cert": -0.4125007679933248,
+          "E_primal": -0.4125002501346456,
+          "E_ub": -0.3000000000000008,
+          "gap_raw_mha": 112.5007679933242,
+          "gap_frob_mha": 112.5007679933242,
+          "iters": 70,
+          "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_rank1_exact_t2.json",
+          "exact_verify": {
+            "E_lb_int_chol": -0.41250689494276893,
+            "E_lb_weyl": -0.4125007679933248,
+            "all_blocks_sdd": 1,
+            "scale_D": 100000000
+          }
+        },
+        "DQG+T1+T2": {
+          "E_lb_cert": -0.41250202070948494,
+          "E_primal": -0.412500147513982,
+          "E_ub": -0.3000000000000008,
+          "gap_raw_mha": 112.50202070948434,
+          "gap_frob_mha": 112.50202070948434,
+          "iters": 72,
+          "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_rank1_exact_t12.json",
+          "exact_verify": {
+            "E_lb_int_chol": -0.4125086833843956,
+            "E_lb_weyl": -0.41250202070948494,
+            "all_blocks_sdd": 1,
+            "scale_D": 100000000
+          }
+        }
+      },
+      "fcidump_path": "/Users/kuangtalin/Documents/CHEM/experiments/discovered_rank1_exact_m1m122.fcidump",
+      "beta": [
+        -1.0,
+        -1.0,
+        2.0,
+        2.0
+      ],
+      "analytical_DQG_E": -0.4125,
+      "analytical_FCI_E": -0.3,
+      "analytical_gap_mha": 112.5,
+      "fci_moments_nA": {
+        "mean_nA": 2.2757189115161505,
+        "second_moment_nA2": 5.378594557580751,
+        "var_nA": 0.19969799334849814
+      }
+    },
+    "discovered_k4_r1_dissection": {
+      "evals_Vt": [
+        -5.655984110385554e-17,
+        -1.649803505928666e-17,
+        -5.683070617026318e-18,
+        -3.1959426244748503e-19,
+        9.871162931468592e-19,
+        1.4293174745540867e-18,
+        1.7757218522367626e-18,
+        5.5250567423495876e-18,
+        1.7414288477388567e-16,
+        0.9844782632914019
+      ],
+      "top_Vt_eig": 0.9844782632914019,
+      "evals_B": [
+        -0.3881153199282156,
+        -0.3828346061854143,
+        0.5756953732729327,
+        0.5965377299278045
+      ],
+      "beta_ratios": [
+        -1.0,
+        -0.9863939569719177,
+        1.4833100980899474,
+        1.5370115512011688
+      ],
+      "h1_eig_diag": [
+        -0.07812851762959261,
+        -0.07765204170065992,
+        0.0950563965810291,
+        0.09814240534492089
+      ],
+      "max_h1_eig_offdiag": 0.0005276560536697696,
+      "h1_frob": 0.17550655003943405,
+      "fci_evals_eig": [
+        -0.3803286836680095,
+        -0.37987444672263426,
+        -0.3790019287394739,
+        -0.3787195507438981
+      ],
+      "fci_moments_nA": {
+        "mean_nA": 2.5317000953469697,
+        "second_moment_nA2": 6.658501372537575,
+        "var_nA": 0.24899599975772002
+      }
+    },
+    "three_pos_dissection": {
+      "grid_size": "401x401",
+      "n_feasible": 14111,
+      "grid_min": {
+        "m1": 2.5,
+        "m2": 6.345,
+        "m3": 16.10375,
+        "var": 0.09499999999999975,
+        "E8": -29.580000000000013,
+        "E_norm_ha": -0.36975000000000013,
+        "D3": 2.0687500000000014,
+        "Q3": 0.0012499999999953104,
+        "F3_det": 0.0003500000000116188,
+        "E3_det": 0.5553499999999936,
+        "mixE3": 1.6887500000000024,
+        "mixF3": 5.621249999999996
+      },
+      "exact_analytical_min": {
+        "m2_min": 6.344645782412854,
+        "m3_at_min": 16.10181204171569,
+        "var_min": 0.09464578241285437,
+        "E8_min": -29.592751833137243,
+        "E_norm_ha": -0.3699093979142155,
+        "gap_DQG_to_3POS_mha": 42.59060208578447,
+        "gap_3POS_to_FCI_mha": 69.90939791421552
+      },
+      "rational_witness_3pos": {
+        "m1": 2.5,
+        "m2": 6.35,
+        "m3": 16.13,
+        "D3": 2.080000000000002,
+        "Q3": 0.019999999999999574,
+        "F3_det": 0.0024999999999977263,
+        "E3_det": 0.582499999999996,
+        "mixE3": 1.6800000000000033,
+        "mixF3": 5.620000000000001,
+        "var": 0.09999999999999964,
+        "E8": -29.400000000000006,
+        "E_norm_ha": -0.36750000000000005
+      },
+      "diagonal_3marginal_witness_m2_625": {
+        "m1": 2.5,
+        "m2": 6.25,
+        "m3": 15.0,
+        "probs_r3_r2_r1_r0": [
+          0.052083333333333336,
+          0.2604166666666667,
+          0.052083333333333336,
+          0.010416666666666666
+        ],
+        "F3_det": -1.5625,
+        "var": 0.0,
+        "E_norm_ha": -0.4125
+      }
+    }
+  },
+  "part2_coulomb_psd_t1_gt_t2_phase_diagram": {
+    "sectors": [
+      {
+        "name": "k4_3e4o_s1",
+        "K": 4,
+        "na": 2,
+        "nb": 1,
+        "nelec": 3,
+        "two_s": 1,
+        "mode": "b",
+        "norm": 0.9999999999999998,
+        "num_rank": 10,
+        "min_eig_Vtilde": 0.0004653627924490425,
+        "min_eig_Vunw": 0.0002529580890955443,
+        "h1_frac": 0.12590583971411512,
+        "eri_frac": 0.8740941602858848,
+        "eri_offdiag_frac": 0.4534287851324308,
+        "fci_evals": [
+          -0.7684968988401767,
+          -0.3787759016711606,
+          -0.3180804915596262,
+          -0.27557353376492594
+        ],
+        "fci_E0": -0.7684968988401767,
+        "fci_E1": -0.3787759016711606,
+        "fci_S1": 0.7759015504415065,
+        "tiers": {
+          "DQG": {
+            "E_lb_cert": -0.768680442235499,
+            "E_primal": -0.7686877866080161,
+            "E_ub": -0.7684968988401766,
+            "gap_raw_mha": 0.18354339532233865,
+            "gap_frob_mha": 0.18354339532233868,
+            "iters": 3500,
+            "cert_path": null,
+            "exact_verify": null
+          },
+          "DQG+T1": {
+            "E_lb_cert": -0.768510232049479,
+            "E_primal": -0.7685039376506697,
+            "E_ub": -0.7684968988401766,
+            "gap_raw_mha": 0.013333209302301974,
+            "gap_frob_mha": 0.013333209302301977,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_3e4o_s1_t1.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.7685147446846305,
+              "E_lb_weyl": -0.768510232049479,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T2": {
+            "E_lb_cert": -0.7684972528868442,
+            "E_primal": -0.7684969255139786,
+            "E_ub": -0.7684968988401766,
+            "gap_raw_mha": 0.0003540466675389098,
+            "gap_frob_mha": 0.00035404666753890984,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_3e4o_s1_t2.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.7685102387548665,
+              "E_lb_weyl": -0.7684972528868442,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T1+T2": {
+            "E_lb_cert": -0.7684972812327031,
+            "E_primal": -0.7684969306758874,
+            "E_ub": -0.7684968988401766,
+            "gap_raw_mha": 0.0003823925264212491,
+            "gap_frob_mha": 0.0003823925264212492,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_3e4o_s1_t12.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.7685113095157855,
+              "E_lb_weyl": -0.7684972812327031,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          }
+        },
+        "search_seed": 2,
+        "search_step": 21,
+        "margin_T1_minus_T2_lb_mha": -0.012979162634763064,
+        "margin_T1_minus_T2_strict_primal_mha": -0.013306535500356986,
+        "margin_intchol_mha": -0.0045059297640870355,
+        "margin_weyl_mha": -0.012979162634763064,
+        "gain_DQG_to_T12_mha": 0.1831610027959174
+      },
+      {
+        "name": "k4_4e4o_s0",
+        "K": 4,
+        "na": 2,
+        "nb": 2,
+        "nelec": 4,
+        "two_s": 0,
+        "mode": "a",
+        "norm": 0.9999999999999999,
+        "num_rank": 10,
+        "min_eig_Vtilde": 0.0002631528144567172,
+        "min_eig_Vunw": 0.0001854762415444513,
+        "h1_frac": 0.0981661114499116,
+        "eri_frac": 0.9018338885500884,
+        "eri_offdiag_frac": 0.49012103155043507,
+        "fci_evals": [
+          -1.446669786610907,
+          -0.7944640297216293,
+          -0.670029889382991,
+          -0.6060006922310516
+        ],
+        "fci_E0": -1.446669786610907,
+        "fci_E1": -0.7944640297216293,
+        "fci_S1": 0.15686472242211136,
+        "tiers": {
+          "DQG": {
+            "E_lb_cert": -1.4478425710596814,
+            "E_primal": -1.4478301927302548,
+            "E_ub": -1.446669786610907,
+            "gap_raw_mha": 1.1727844487743333,
+            "gap_frob_mha": 1.1727844487743335,
+            "iters": 3500,
+            "cert_path": null,
+            "exact_verify": null
+          },
+          "DQG+T1": {
+            "E_lb_cert": -1.4467340319314925,
+            "E_primal": -1.4467369123960332,
+            "E_ub": -1.446669786610907,
+            "gap_raw_mha": 0.06424532058546539,
+            "gap_frob_mha": 0.0642453205854654,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_4e4o_s0_t1.json",
+            "exact_verify": {
+              "E_lb_int_chol": -1.4467365640054923,
+              "E_lb_weyl": -1.4467340319314925,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T2": {
+            "E_lb_cert": -1.4467404139987643,
+            "E_primal": -1.446772083709105,
+            "E_ub": -1.446669786610907,
+            "gap_raw_mha": 0.0706273878572361,
+            "gap_frob_mha": 0.07062738785723612,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_4e4o_s0_t2.json",
+            "exact_verify": {
+              "E_lb_int_chol": -1.4467483721092638,
+              "E_lb_weyl": -1.4467404139987643,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T1+T2": {
+            "E_lb_cert": -1.4467473152600814,
+            "E_primal": -1.4467904571755696,
+            "E_ub": -1.446669786610907,
+            "gap_raw_mha": 0.07752864917431879,
+            "gap_frob_mha": 0.0775286491743188,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_4e4o_s0_t12.json",
+            "exact_verify": {
+              "E_lb_int_chol": -1.446755755922557,
+              "E_lb_weyl": -1.4467473152600814,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          }
+        },
+        "search_seed": 1,
+        "search_step": 20,
+        "margin_T1_minus_T2_lb_mha": 0.006382067271770708,
+        "margin_T1_minus_T2_strict_primal_mha": 0.006382067271770708,
+        "margin_intchol_mha": 0.011808103771437928,
+        "margin_weyl_mha": 0.006382067271770708,
+        "gain_DQG_to_T12_mha": 1.0952557996000145
+      },
+      {
+        "name": "k4_4e4o_s2",
+        "K": 4,
+        "na": 3,
+        "nb": 1,
+        "nelec": 4,
+        "two_s": 2,
+        "mode": "b",
+        "norm": 0.9999999999999999,
+        "num_rank": 10,
+        "min_eig_Vtilde": 0.00016497596044173294,
+        "min_eig_Vunw": 8.997936884807195e-05,
+        "h1_frac": 0.031257805986352444,
+        "eri_frac": 0.9687421940136476,
+        "eri_offdiag_frac": 0.3556032213841911,
+        "fci_evals": [
+          -0.8720160972822185,
+          -0.49112625210225586,
+          -0.414597522624642,
+          -0.37568952096158575
+        ],
+        "fci_E0": -0.8720160972822185,
+        "fci_E1": -0.49112625210225586,
+        "fci_S1": 0.334202210515531,
+        "tiers": {
+          "DQG": {
+            "E_lb_cert": -0.8720173159826028,
+            "E_primal": -0.87201621207132,
+            "E_ub": -0.8720160972822188,
+            "gap_raw_mha": 0.0012187003842756283,
+            "gap_frob_mha": 0.0012187003842756285,
+            "iters": 915,
+            "cert_path": null,
+            "exact_verify": null
+          },
+          "DQG+T1": {
+            "E_lb_cert": -0.8720162268566151,
+            "E_primal": -0.8720160118473992,
+            "E_ub": -0.8720160972822188,
+            "gap_raw_mha": 0.00012957439654570635,
+            "gap_frob_mha": 0.00012957439654570638,
+            "iters": 730,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_4e4o_s2_t1.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.8720206737151128,
+              "E_lb_weyl": -0.8720162268566151,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T2": {
+            "E_lb_cert": -0.8720187219043362,
+            "E_primal": -0.8720161550303989,
+            "E_ub": -0.8720160972822188,
+            "gap_raw_mha": 0.002624622117641806,
+            "gap_frob_mha": 0.0026246221176418065,
+            "iters": 1420,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_4e4o_s2_t2.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.8720320887624767,
+              "E_lb_weyl": -0.8720187219043362,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T1+T2": {
+            "E_lb_cert": -0.8720192908399031,
+            "E_primal": -0.8720161504528541,
+            "E_ub": -0.8720160972822188,
+            "gap_raw_mha": 0.0031935576846331415,
+            "gap_frob_mha": 0.003193557684633142,
+            "iters": 800,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k4_4e4o_s2_t12.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.8720337214429061,
+              "E_lb_weyl": -0.8720192908399031,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          }
+        },
+        "search_seed": 0,
+        "search_step": 3,
+        "margin_T1_minus_T2_lb_mha": 0.0024950477210960997,
+        "margin_T1_minus_T2_strict_primal_mha": -7.182621619694629e-05,
+        "margin_intchol_mha": 0.011415047363905195,
+        "margin_weyl_mha": 0.0024950477210960997,
+        "gain_DQG_to_T12_mha": -0.001974857300357513
+      },
+      {
+        "name": "k5_3e5o_s1",
+        "K": 5,
+        "na": 2,
+        "nb": 1,
+        "nelec": 3,
+        "two_s": 1,
+        "mode": "b",
+        "norm": 0.9999999999999999,
+        "num_rank": 15,
+        "min_eig_Vtilde": 7.003490210296612e-06,
+        "min_eig_Vunw": 3.5074933190941696e-06,
+        "h1_frac": 0.08362074178367489,
+        "eri_frac": 0.9163792582163252,
+        "eri_offdiag_frac": 0.00742057310785571,
+        "fci_evals": [
+          -0.36588536909654645,
+          -0.3508698427902721,
+          -0.28839154012392865,
+          -0.22627521482084945
+        ],
+        "fci_E0": -0.36588536909654645,
+        "fci_E1": -0.3508698427902721,
+        "fci_S1": 1.4373426582621271,
+        "tiers": {
+          "DQG": {
+            "E_lb_cert": -0.3659496501505113,
+            "E_primal": -0.36594190253451475,
+            "E_ub": -0.3658853690965464,
+            "gap_raw_mha": 0.06428105396483197,
+            "gap_frob_mha": 0.06428105396483198,
+            "iters": 3500,
+            "cert_path": null,
+            "exact_verify": null
+          },
+          "DQG+T1": {
+            "E_lb_cert": -0.3659599751953552,
+            "E_primal": -0.36593427837430004,
+            "E_ub": -0.3658853690965464,
+            "gap_raw_mha": 0.07460609880877156,
+            "gap_frob_mha": 0.07460609880877157,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_3e5o_s1_t1.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.36596901065127885,
+              "E_lb_weyl": -0.3659599751953552,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T2": {
+            "E_lb_cert": -0.36590278400608056,
+            "E_primal": -0.36588528002967863,
+            "E_ub": -0.3658853690965464,
+            "gap_raw_mha": 0.01741490953410807,
+            "gap_frob_mha": 0.017414909534108073,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_3e5o_s1_t2.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.3659237851267801,
+              "E_lb_weyl": -0.36590278400608056,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T1+T2": {
+            "E_lb_cert": -0.3658976427913366,
+            "E_primal": -0.3658853317523765,
+            "E_ub": -0.3658853690965464,
+            "gap_raw_mha": 0.012273694790121414,
+            "gap_frob_mha": 0.012273694790121416,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_3e5o_s1_t12.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.3659216877402308,
+              "E_lb_weyl": -0.3658976427913366,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          }
+        },
+        "search_seed": 0,
+        "search_step": 0,
+        "margin_T1_minus_T2_lb_mha": -0.05719118927466349,
+        "margin_T1_minus_T2_strict_primal_mha": -0.07469516567659706,
+        "margin_intchol_mha": -0.04522552449875983,
+        "margin_weyl_mha": -0.05719118927466349,
+        "gain_DQG_to_T12_mha": 0.052007359174710555
+      },
+      {
+        "name": "k5_4e5o_s2",
+        "K": 5,
+        "na": 3,
+        "nb": 1,
+        "nelec": 4,
+        "two_s": 2,
+        "mode": "b",
+        "norm": 0.9999999999999997,
+        "num_rank": 15,
+        "min_eig_Vtilde": 0.0009901463744940294,
+        "min_eig_Vunw": 0.0005728141759584743,
+        "h1_frac": 0.053993628240113986,
+        "eri_frac": 0.946006371759886,
+        "eri_offdiag_frac": 0.3095536519110872,
+        "fci_evals": [
+          -0.4972250439022809,
+          -0.4860595165918993,
+          -0.4717385473387685,
+          -0.43835926384298207
+        ],
+        "fci_E0": -0.4972250439022809,
+        "fci_E1": -0.4860595165918993,
+        "fci_S1": 2.813281432350176,
+        "tiers": {
+          "DQG": {
+            "E_lb_cert": -0.5386453448053808,
+            "E_primal": -0.5390246695475119,
+            "E_ub": -0.49722504390228056,
+            "gap_raw_mha": 41.42030090309995,
+            "gap_frob_mha": 41.420300903099964,
+            "iters": 3500,
+            "cert_path": null,
+            "exact_verify": null
+          },
+          "DQG+T1": {
+            "E_lb_cert": -0.5008901351925994,
+            "E_primal": -0.5010056728326945,
+            "E_ub": -0.49722504390228056,
+            "gap_raw_mha": 3.6650912903185007,
+            "gap_frob_mha": 3.665091290318502,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_4e5o_s2_t1.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.5008982119423481,
+              "E_lb_weyl": -0.5008901351925994,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T2": {
+            "E_lb_cert": -0.5028238309355892,
+            "E_primal": -0.5027494976520782,
+            "E_ub": -0.49722504390228056,
+            "gap_raw_mha": 5.59878703330835,
+            "gap_frob_mha": 5.598787033308351,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_4e5o_s2_t2.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.5028554141874049,
+              "E_lb_weyl": -0.5028238309355892,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T1+T2": {
+            "E_lb_cert": -0.49964591525760205,
+            "E_primal": -0.49953601326396485,
+            "E_ub": -0.49722504390228056,
+            "gap_raw_mha": 2.4208713553211525,
+            "gap_frob_mha": 2.4208713553211534,
+            "iters": 3500,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_4e5o_s2_t12.json",
+            "exact_verify": {
+              "E_lb_int_chol": -0.4996772902517072,
+              "E_lb_weyl": -0.49964591525760205,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          }
+        },
+        "search_seed": 3,
+        "search_step": 21,
+        "margin_T1_minus_T2_lb_mha": 1.9336957429898494,
+        "margin_T1_minus_T2_strict_primal_mha": 1.8593624594788194,
+        "margin_intchol_mha": 1.9572022450567994,
+        "margin_weyl_mha": 1.9336957429898494,
+        "gain_DQG_to_T12_mha": 38.999429547778796
+      },
+      {
+        "name": "k5_5e5o_s3",
+        "K": 5,
+        "na": 4,
+        "nb": 1,
+        "nelec": 5,
+        "two_s": 3,
+        "mode": "b",
+        "norm": 1.0,
+        "num_rank": 15,
+        "min_eig_Vtilde": 0.0014039689016062155,
+        "min_eig_Vunw": 0.0008459604412975728,
+        "h1_frac": 0.05126689888196062,
+        "eri_frac": 0.9487331011180393,
+        "eri_offdiag_frac": 0.40697582716783376,
+        "fci_evals": [
+          -1.2020456131682975,
+          -0.8721547452436514,
+          -0.8510873656597857,
+          -0.8168959321659651
+        ],
+        "fci_E0": -1.2020456131682975,
+        "fci_E1": -0.8721547452436514,
+        "fci_S1": 0.3533348084832666,
+        "tiers": {
+          "DQG": {
+            "E_lb_cert": -1.2020459465794358,
+            "E_primal": -1.2020457506408961,
+            "E_ub": -1.2020456131682973,
+            "gap_raw_mha": 0.00033341113825358093,
+            "gap_frob_mha": 0.00033341113825358093,
+            "iters": 3500,
+            "cert_path": null,
+            "exact_verify": null
+          },
+          "DQG+T1": {
+            "E_lb_cert": -1.2020459034375135,
+            "E_primal": -1.2020456482451691,
+            "E_ub": -1.2020456131682973,
+            "gap_raw_mha": 0.00029026921599673017,
+            "gap_frob_mha": 0.00029026921599673017,
+            "iters": 3411,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_5e5o_s3_t1.json",
+            "exact_verify": {
+              "E_lb_int_chol": -1.2020539528127205,
+              "E_lb_weyl": -1.2020459034375135,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T2": {
+            "E_lb_cert": -1.202045728605866,
+            "E_primal": -1.2020456147558995,
+            "E_ub": -1.2020456131682973,
+            "gap_raw_mha": 0.00011543756839316188,
+            "gap_frob_mha": 0.00011543756839316188,
+            "iters": 1812,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_5e5o_s3_t2.json",
+            "exact_verify": {
+              "E_lb_int_chol": -1.2020737084289743,
+              "E_lb_weyl": -1.202045728605866,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          },
+          "DQG+T1+T2": {
+            "E_lb_cert": -1.202046031196446,
+            "E_primal": -1.2020455894673674,
+            "E_ub": -1.2020456131682973,
+            "gap_raw_mha": 0.00041802814854108306,
+            "gap_frob_mha": 0.00041802814854108306,
+            "iters": 1093,
+            "cert_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_k5_5e5o_s3_t12.json",
+            "exact_verify": {
+              "E_lb_int_chol": -1.2020761225308887,
+              "E_lb_weyl": -1.202046031196446,
+              "all_blocks_sdd": 1,
+              "scale_D": 100000000
+            }
+          }
+        },
+        "search_seed": 1,
+        "search_step": 3,
+        "margin_T1_minus_T2_lb_mha": -0.00017483164760356829,
+        "margin_T1_minus_T2_strict_primal_mha": -0.00028868161394690617,
+        "margin_intchol_mha": 0.019755616253780417,
+        "margin_weyl_mha": -0.00017483164760356829,
+        "gain_DQG_to_T12_mha": -8.461701028750213e-05
+      }
+    ],
+    "witness_export": {
+      "exported": true,
+      "sector": "k5_4e5o_s2",
+      "fcidump_path": "/Users/kuangtalin/Documents/CHEM/experiments/discovered_coulomb_t1_beats_t2.fcidump",
+      "cert_t1_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_t1_beats_t2_t1.json",
+      "cert_t2_path": "/Users/kuangtalin/Documents/CHEM/experiments/cert_exp4_t1_beats_t2_t2.json",
+      "ev_t1": {
+        "ok": true,
+        "sha_ok": 1,
+        "all_blocks_sdd": 1,
+        "lb_ok": 1,
+        "var_ok": 1,
+        "nblocks": 13,
+        "scale_D": 100000000,
+        "E_lb_int_chol": -0.5008982119423481,
+        "E_lb_weyl": -0.5008901351925994,
+        "max_sdd_margin": 0,
+        "elapsed_sec": 0.001129,
+        "returncode": 0
+      },
+      "ev_t2": {
+        "ok": true,
+        "sha_ok": 1,
+        "all_blocks_sdd": 1,
+        "lb_ok": 1,
+        "var_ok": 1,
+        "nblocks": 13,
+        "scale_D": 100000000,
+        "E_lb_int_chol": -0.5028554141874049,
+        "E_lb_weyl": -0.5028238309355892,
+        "max_sdd_margin": 0,
+        "elapsed_sec": 0.009438,
+        "returncode": 0
+      },
+      "margin_intchol_mha": 1.9572022450567994,
+      "margin_weyl_mha": 1.9336957429898494,
+      "emit_lean_ok": true,
+      "leanchecker_ok": false,
+      "lean_path": null,
+      "lean_msg": "/Users/kuangtalin/Documents/CHEM/lean/CertCoulombT1BeatsT2.lean:58:11873: error: (deterministic) timeout at `\u00absynthesize pending MVars\u00bb`, maximum number of heartbeats (200000) has been reached\n\nNote: Use `set_option maxHeartbeats <num>` to set the limit.\n\nHint: Additional diagnostic information may be available using the `set_option diagnostics true` command.\n/Users/kuangtalin/Documents/CHEM/lean/CertCoulombT1BeatsT2.lean:64:58: error: Expected type must not contain free variables\n  ChemCert.checkCholeskySDD 50 A_6 L_6 mu_psd_6 = true\n\nHint: Use the `+revert` option to automatically clean up and revert free variables\n/Users/kuangtalin/Documents/CHEM/lean/CertCoulombT1BeatsT2.lean:90:22373: error: (deterministic) timeout at `\u00absynthesize pending MVars\u00bb`, maximum number of heartbeats (200000) has been reached\n\nNote: Use `set_option maxHeartbeats <num>` to set the limit.\n\nHint: Additional diagnostic information may be available using the `set_option diagnostics true` command.\n/Users/kuangtalin/Documents/CHEM/lean/CertCoulombT1BeatsT2.lean:91:5194: error: (deterministic) timeout at `\u00absynthesize pending MVars\u00bb`, maximum number of heartbeats (200000) has been reached\n\nNote: Use `set_option maxHeartbeats <num>` to set the limit.\n\nHint: Additional diagnostic information may be available using the `set_option diagnostics true` command.\n/Users/kuangtalin/Documents/CHEM/lean/CertCoulombT1BeatsT2.lean:96:42: error(lean.unknownIdentifier): Unknown identifier `L_10`\n/Users/kuangtalin/Documents/CHEM/lean/CertCoulombT1BeatsT2.lean:112:61: error: maximum recursion depth has been reached\nuse `set_option maxRecDepth <num>` to increase limit\nuse `set_option diagnostics true` to get diagnostic information\n'CertCoulombT1BeatsT2.molecule_bracket_valid' does not depend on any axioms\n'CertCoulombT1BeatsT2.block_0_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_1_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_2_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_3_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_4_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_5_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_6_psd' depends on axioms: [propext, sorryAx, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_7_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_8_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_9_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_10_psd' depends on axioms: [propext, sorryAx, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_11_psd' depends on axioms: [propext, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.block_12_psd' depends on axioms: [propext, sorryAx, Classical.choice, Quot.sound]\n'CertCoulombT1BeatsT2.molecule_lower_bound_sound' depends on axioms: [propext, Classical.choice, Quot.sound]"
+    }
+  },
+  "part3_phase_boundary": {
+    "sweep_3a_convex_psd": {
+      "points": [
+        {
+          "norm": 1.0,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.0,
+          "eri_frac": 1.0,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -0.3000000000000006,
+          "fci_E1": -0.3000000000000005,
+          "fci_S1": 4.943847044626373,
+          "fci_var_nA": 0.19969799334849814,
+          "fci_mean_nA": 2.2757189115161505,
+          "E_lb": {
+            "DQG": -0.41250095098186207,
+            "DQG+T1": -0.41250039983737175,
+            "DQG+T2": -0.4125007679933248,
+            "DQG+T1+T2": -0.41250202070948494
+          },
+          "gaps_raw_mha": {
+            "DQG": 112.50095098186146,
+            "DQG+T1": 112.50039983737115,
+            "DQG+T2": 112.5007679933242,
+            "DQG+T1+T2": 112.50202070948434
+          },
+          "gaps_frob_mha": {
+            "DQG": 112.50095098186146,
+            "DQG+T1": 112.50039983737115,
+            "DQG+T2": 112.5007679933242,
+            "DQG+T1+T2": 112.50202070948434
+          },
+          "lambda": 0.0
+        },
+        {
+          "norm": 0.954851247014217,
+          "min_eig_Vtilde": 2.6068992535958775e-05,
+          "min_eig_Vunw": 1.894552119111395e-05,
+          "h1_frac": 0.001843384048716716,
+          "eri_frac": 0.9981566159512832,
+          "eri_offdiag_frac": 7.649113595531443e-05,
+          "fci_E0": -0.34204768549559594,
+          "fci_E1": -0.33646575970132503,
+          "fci_S1": 3.4619183721944267,
+          "fci_var_nA": 0.09414589456634381,
+          "fci_mean_nA": 2.8948035760986945,
+          "E_lb": {
+            "DQG": -0.44664801388733083,
+            "DQG+T1": -0.4448384839314063,
+            "DQG+T2": -0.44296222474562474,
+            "DQG+T1+T2": -0.4429533440973208
+          },
+          "gaps_raw_mha": {
+            "DQG": 104.60032839173489,
+            "DQG+T1": 102.79079843581034,
+            "DQG+T2": 100.9145392500288,
+            "DQG+T1+T2": 100.90565860172485
+          },
+          "gaps_frob_mha": {
+            "DQG": 109.5462028444913,
+            "DQG+T1": 107.65111189542162,
+            "DQG+T2": 105.68613652187675,
+            "DQG+T1+T2": 105.67683596502906
+          },
+          "lambda": 0.05
+        },
+        {
+          "norm": 0.9125635534115097,
+          "min_eig_Vtilde": 5.212760213713035e-05,
+          "min_eig_Vunw": 3.788413005203749e-05,
+          "h1_frac": 0.008072740949410158,
+          "eri_frac": 0.9919272590505899,
+          "eri_offdiag_frac": 0.0003370816928742748,
+          "fci_E0": -0.38411002574867187,
+          "fci_E1": -0.3729723183660044,
+          "fci_S1": 3.4654914035582105,
+          "fci_var_nA": 0.09454369393779594,
+          "fci_mean_nA": 2.894364814328272,
+          "E_lb": {
+            "DQG": -0.48088337593597397,
+            "DQG+T1": -0.47727349623294396,
+            "DQG+T2": -0.4734905112966947,
+            "DQG+T1+T2": -0.47352183972161693
+          },
+          "gaps_raw_mha": {
+            "DQG": 96.7733501873021,
+            "DQG+T1": 93.1634704842721,
+            "DQG+T2": 89.38048554802286,
+            "DQG+T1+T2": 89.41181397294507
+          },
+          "gaps_frob_mha": {
+            "DQG": 106.04560068778387,
+            "DQG+T1": 102.08984364540048,
+            "DQG+T2": 97.94439544937403,
+            "DQG+T1+T2": 97.97872557882647
+          },
+          "lambda": 0.1
+        },
+        {
+          "norm": 0.8735525200417595,
+          "min_eig_Vtilde": 7.817400186546499e-05,
+          "min_eig_Vunw": 5.681460981772594e-05,
+          "h1_frac": 0.01982219444160967,
+          "eri_frac": 0.9801778055583904,
+          "eri_offdiag_frac": 0.0008376080502321415,
+          "fci_E0": -0.42618853439080695,
+          "fci_E1": -0.4095259571887631,
+          "fci_S1": 3.4695373773274634,
+          "fci_var_nA": 0.09503799409834279,
+          "fci_mean_nA": 2.893857885314732,
+          "E_lb": {
+            "DQG": -0.5152165707884463,
+            "DQG+T1": -0.5098199939755681,
+            "DQG+T2": -0.5042147583059374,
+            "DQG+T1+T2": -0.5042069524620981
+          },
+          "gaps_raw_mha": {
+            "DQG": 89.02803639763934,
+            "DQG+T1": 83.63145958476115,
+            "DQG+T2": 78.02622391513047,
+            "DQG+T1+T2": 78.01841807129118
+          },
+          "gaps_frob_mha": {
+            "DQG": 101.91492137574444,
+            "DQG+T1": 95.73718541933026,
+            "DQG+T2": 89.3205870568612,
+            "DQG+T1+T2": 89.31165131040039
+          },
+          "lambda": 0.15000000000000002
+        },
+        {
+          "norm": 0.8382757319005525,
+          "min_eig_Vtilde": 0.00010420590946667464,
+          "min_eig_Vunw": 7.573544034418904e-05,
+          "h1_frac": 0.038267796866804475,
+          "eri_frac": 0.9617322031331955,
+          "eri_offdiag_frac": 0.0016480609789046863,
+          "fci_E0": -0.46828493868080845,
+          "fci_E1": -0.4461343501188135,
+          "fci_S1": 3.4741293875986274,
+          "fci_var_nA": 0.09564654773918946,
+          "fci_mean_nA": 2.893271378618046,
+          "E_lb": {
+            "DQG": -0.5496594617252257,
+            "DQG+T1": -0.5424957501737674,
+            "DQG+T2": -0.5352497510533462,
+            "DQG+T1+T2": -0.5352400966501452
+          },
+          "gaps_raw_mha": {
+            "DQG": 81.37452304441727,
+            "DQG+T1": 74.21081149295894,
+            "DQG+T2": 66.96481237253771,
+            "DQG+T1+T2": 66.95515796933671
+          },
+          "gaps_frob_mha": {
+            "DQG": 97.07369538173748,
+            "DQG+T1": 88.52792544131866,
+            "DQG+T2": 79.88399261030018,
+            "DQG+T1+T2": 79.87247563225394
+          },
+          "lambda": 0.2
+        },
+        {
+          "norm": 0.8072229130056555,
+          "min_eig_Vtilde": 0.00013022043610186058,
+          "min_eig_Vunw": 9.464469727046038e-05,
+          "h1_frac": 0.0644822690459949,
+          "eri_frac": 0.9355177309540051,
+          "eri_offdiag_frac": 0.00285484322235785,
+          "fci_E0": -0.5104012181205022,
+          "fci_E1": -0.4828069865185697,
+          "fci_S1": 3.4793541254581415,
+          "fci_var_nA": 0.09639078448380012,
+          "fci_mean_nA": 2.8925915998429867,
+          "E_lb": {
+            "DQG": -0.5842251514467819,
+            "DQG+T1": -0.5753243090783685,
+            "DQG+T2": -0.5666069616735547,
+            "DQG+T1+T2": -0.5665888053806475
+          },
+          "gaps_raw_mha": {
+            "DQG": 73.82393332627967,
+            "DQG+T1": 64.92309095786631,
+            "DQG+T2": 56.20574355305252,
+            "DQG+T1+T2": 56.18758726014528
+          },
+          "gaps_frob_mha": {
+            "DQG": 91.45420940964104,
+            "DQG+T1": 80.42771074984519,
+            "DQG+T2": 69.62852843680211,
+            "DQG+T1+T2": 69.6060361454973
+          },
+          "lambda": 0.25
+        },
+        {
+          "norm": 0.7808981310229244,
+          "min_eig_Vtilde": 0.0001562138704810977,
+          "min_eig_Vunw": 0.00011353990809768568,
+          "h1_frac": 0.09922040565691868,
+          "eri_frac": 0.9007795943430813,
+          "eri_offdiag_frac": 0.004562222206184519,
+          "fci_E0": -0.5525396516487137,
+          "fci_E1": -0.5195557646752793,
+          "fci_S1": 3.48531486699837,
+          "fci_var_nA": 0.0972966973741709,
+          "fci_mean_nA": 2.89180202509662,
+          "E_lb": {
+            "DQG": -0.6189279741763837,
+            "DQG+T1": -0.6083368136718037,
+            "DQG+T2": -0.5983027775031762,
+            "DQG+T1+T2": -0.5982975360105284
+          },
+          "gaps_raw_mha": {
+            "DQG": 66.38832252767001,
+            "DQG+T1": 55.79716202309004,
+            "DQG+T2": 45.763125854462515,
+            "DQG+T1+T2": 45.75788436181472
+          },
+          "gaps_frob_mha": {
+            "DQG": 85.01534309053314,
+            "DQG+T1": 71.45254906680272,
+            "DQG+T2": 58.60319552118261,
+            "DQG+T1+T2": 58.596483387500164
+          },
+          "lambda": 0.30000000000000004
+        },
+        {
+          "norm": 0.7597929862499967,
+          "min_eig_Vtilde": 0.00018218136374869315,
+          "min_eig_Vunw": 0.00013241784206190476,
+          "h1_frac": 0.14265690051799335,
+          "eri_frac": 0.8573430994820066,
+          "eri_offdiag_frac": 0.00689179106106752,
+          "fci_E0": -0.5947028756880613,
+          "fci_E1": -0.5563958466503205,
+          "fci_S1": 3.4921352189529196,
+          "fci_var_nA": 0.09839597664615596,
+          "fci_mean_nA": 2.8908826022402656,
+          "E_lb": {
+            "DQG": -0.6537832735646218,
+            "DQG+T1": -0.6415739398032021,
+            "DQG+T2": -0.6304320254929956,
+            "DQG+T1+T2": -0.6304311441462693
+          },
+          "gaps_raw_mha": {
+            "DQG": 59.0803978765605,
+            "DQG+T1": 46.87106411514075,
+            "DQG+T2": 35.729149804934245,
+            "DQG+T1+T2": 35.72826845820798
+          },
+          "gaps_frob_mha": {
+            "DQG": 77.7585460062685,
+            "DQG+T1": 61.6892561044498,
+            "DQG+T2": 47.0248481514387,
+            "DQG+T1+T2": 47.02368816872996
+          },
+          "lambda": 0.35000000000000003
+        },
+        {
+          "norm": 0.7443515997430987,
+          "min_eig_Vtilde": 0.0002081164574672375,
+          "min_eig_Vunw": 0.0001512741953204509,
+          "h1_frac": 0.19413819441803368,
+          "eri_frac": 0.8058618055819664,
+          "eri_offdiag_frac": 0.009978020429041501,
+          "fci_E0": -0.6368939560233621,
+          "fci_E1": -0.5933469269149858,
+          "fci_S1": 3.4999638382372056,
+          "fci_var_nA": 0.0997274694968393,
+          "fci_mean_nA": 2.8898088491379283,
+          "E_lb": {
+            "DQG": -0.6888084745392911,
+            "DQG+T1": -0.6750932817059376,
+            "DQG+T2": -0.6631113589676186,
+            "DQG+T1+T2": -0.6631102036597971
+          },
+          "gaps_raw_mha": {
+            "DQG": 51.91451851592899,
+            "DQG+T1": 38.199325682575555,
+            "DQG+T2": 26.217402944256563,
+            "DQG+T1+T2": 26.216247636435043
+          },
+          "gaps_frob_mha": {
+            "DQG": 69.74461871761473,
+            "DQG+T1": 51.31892736679743,
+            "DQG+T2": 35.22179968889042,
+            "DQG+T1+T2": 35.220247589288675
+          },
+          "lambda": 0.4
+        },
+        {
+          "norm": 0.7349310561483735,
+          "min_eig_Vtilde": 0.00023401035530908133,
+          "min_eig_Vunw": 0.00017010310509362283,
+          "h1_frac": 0.25204557865532334,
+          "eri_frac": 0.7479544213446766,
+          "eri_offdiag_frac": 0.013957187889722333,
+          "fci_E0": -0.679116477444493,
+          "fci_E1": -0.6304351833604959,
+          "fci_S1": 3.5089804092757446,
+          "fci_var_nA": 0.1013390726439809,
+          "fci_mean_nA": 2.888550680645175,
+          "E_lb": {
+            "DQG": -0.7240222941405539,
+            "DQG+T1": -0.7089699546162284,
+            "DQG+T2": -0.6965292217786543,
+            "DQG+T1+T2": -0.6965280054319946
+          },
+          "gaps_raw_mha": {
+            "DQG": 44.90581669606086,
+            "DQG+T1": 29.853477171735364,
+            "DQG+T2": 17.41274433416129,
+            "DQG+T1+T2": 17.411527987501564
+          },
+          "gaps_frob_mha": {
+            "DQG": 61.10208069230773,
+            "DQG+T1": 40.62078602065269,
+            "DQG+T2": 23.693031051671696,
+            "DQG+T1+T2": 23.691376003011623
+          },
+          "lambda": 0.45
+        },
+        {
+          "norm": 0.7317639248476574,
+          "min_eig_Vtilde": 0.00025985075994921993,
+          "min_eig_Vunw": 0.00018889637354798833,
+          "h1_frac": 0.31386672327926535,
+          "eri_frac": 0.6861332767207347,
+          "eri_offdiag_frac": 0.018946577295961053,
+          "fci_E0": -0.7213746563905595,
+          "fci_E1": -0.6676964093213725,
+          "fci_S1": 3.519403252803524,
+          "fci_var_nA": 0.10329020359812091,
+          "fci_mean_nA": 2.8870708699341785,
+          "E_lb": {
+            "DQG": -0.7594443155479818,
+            "DQG+T1": -0.7432660186570774,
+            "DQG+T2": -0.7310302393149236,
+            "DQG+T1+T2": -0.731029635141997
+          },
+          "gaps_raw_mha": {
+            "DQG": 38.06965915742222,
+            "DQG+T1": 21.891362266517888,
+            "DQG+T2": 9.655582924364081,
+            "DQG+T1+T2": 9.654978751437504
+          },
+          "gaps_frob_mha": {
+            "DQG": 52.02450935982909,
+            "DQG+T1": 29.91588068662356,
+            "DQG+T2": 13.194942516979411,
+            "DQG+T1+T2": 13.194116877854468
+          },
+          "lambda": 0.5
+        },
+        {
+          "norm": 0.7349310561483734,
+          "min_eig_Vtilde": 0.0002856199388708038,
+          "min_eig_Vunw": 0.00020764217675053585,
+          "h1_frac": 0.3765125310777054,
+          "eri_frac": 0.6234874689222947,
+          "eri_offdiag_frac": 0.025011842245444726,
+          "fci_E0": -0.7636734836303884,
+          "fci_E1": -0.7051813111726662,
+          "fci_S1": 3.5314990589153754,
+          "fci_var_nA": 0.10565505132664121,
+          "fci_mean_nA": 2.8853230123660154,
+          "E_lb": {
+            "DQG": -0.7950991949489346,
+            "DQG+T1": -0.7781425017861024,
+            "DQG+T2": -0.7672786676021706,
+            "DQG+T1+T2": -0.7672793115638186
+          },
+          "gaps_raw_mha": {
+            "DQG": 31.4257113185461,
+            "DQG+T1": 14.469018155713997,
+            "DQG+T2": 3.605183971782111,
+            "DQG+T1+T2": 3.605827933430117
+          },
+          "gaps_frob_mha": {
+            "DQG": 42.7600807662721,
+            "DQG+T1": 19.687585705716703,
+            "DQG+T2": 4.905472345496133,
+            "DQG+T1+T2": 4.906348565983236
+          },
+          "lambda": 0.55
+        },
+        {
+          "norm": 0.7443515997430987,
+          "min_eig_Vtilde": 0.0003112913486206736,
+          "min_eig_Vunw": 0.00022632281057185813,
+          "h1_frac": 0.4368109374405758,
+          "eri_frac": 0.5631890625594242,
+          "eri_offdiag_frac": 0.032124270002177546,
+          "fci_E0": -0.8060189065170731,
+          "fci_E1": -0.7429650621563959,
+          "fci_S1": 3.5455953941949816,
+          "fci_var_nA": 0.1085268839556619,
+          "fci_mean_nA": 2.8832488061788615,
+          "E_lb": {
+            "DQG": -0.8310196061072601,
+            "DQG+T1": -0.813968266264015,
+            "DQG+T2": -0.8064753319920032,
+            "DQG+T1+T2": -0.8064748293216499
+          },
+          "gaps_raw_mha": {
+            "DQG": 25.000699590187025,
+            "DQG+T1": 7.949359746941886,
+            "DQG+T2": 0.4564254749300778,
+            "DQG+T1+T2": 0.4559228045768471
+          },
+          "gaps_frob_mha": {
+            "DQG": 33.58721818938204,
+            "DQG+T1": 10.67957635838424,
+            "DQG+T2": 0.6131853214094064,
+            "DQG+T1+T2": 0.61251000835385
+          },
+          "lambda": 0.6000000000000001
+        },
+        {
+          "norm": 0.7597929862499967,
+          "min_eig_Vtilde": 0.0003368233863367503,
+          "min_eig_Vunw": 0.00024491051646450407,
+          "h1_frac": 0.4920207385212424,
+          "eri_frac": 0.5079792614787576,
+          "eri_offdiag_frac": 0.040117272767989154,
+          "fci_E0": -0.8484180638694926,
+          "fci_E1": -0.7811659496186644,
+          "fci_S1": 3.5620968376227156,
+          "fci_var_nA": 0.11202379959123832,
+          "fci_mean_nA": 2.8807743857208568,
+          "E_lb": {
+            "DQG": -0.867257893360953,
+            "DQG+T1": -0.8516695497191324,
+            "DQG+T2": -0.8485725735365611,
+            "DQG+T1+T2": -0.8485726688879826
+          },
+          "gaps_raw_mha": {
+            "DQG": 18.839829491460456,
+            "DQG+T1": 3.251485849639857,
+            "DQG+T2": 0.15450966706853642,
+            "DQG+T1+T2": 0.15460501848996167
+          },
+          "gaps_frob_mha": {
+            "DQG": 24.796003427783074,
+            "DQG+T1": 4.2794365155800635,
+            "DQG+T2": 0.20335758537483747,
+            "DQG+T1+T2": 0.20348308195502554
+          },
+          "lambda": 0.65
+        },
+        {
+          "norm": 0.7808981310229244,
+          "min_eig_Vtilde": 0.00036214694521166115,
+          "min_eig_Vunw": 0.0002633591632329883,
+          "h1_frac": 0.540199986354335,
+          "eri_frac": 0.4598000136456651,
+          "eri_offdiag_frac": 0.0486608358139341,
+          "fci_E0": -0.8908795915166504,
+          "fci_E1": -0.8199854867171051,
+          "fci_S1": 3.5815058617596853,
+          "fci_var_nA": 0.11629645899920149,
+          "fci_mean_nA": 2.8778053276277187,
+          "E_lb": {
+            "DQG": -0.903907788393012,
+            "DQG+T1": -0.8920682780121819,
+            "DQG+T2": -0.8908967961615201,
+            "DQG+T1+T2": -0.8908936820085116
+          },
+          "gaps_raw_mha": {
+            "DQG": 13.028196876361587,
+            "DQG+T1": 1.188686495531499,
+            "DQG+T2": 0.017204644869650565,
+            "DQG+T1+T2": 0.01409049186118505
+          },
+          "gaps_frob_mha": {
+            "DQG": 16.683606169341857,
+            "DQG+T1": 1.5222043033633583,
+            "DQG+T2": 0.02203186841683643,
+            "DQG+T1+T2": 0.018043956441190924
+          },
+          "lambda": 0.7000000000000001
+        },
+        {
+          "norm": 0.8072229130056554,
+          "min_eig_Vtilde": 0.000387138187133797,
+          "min_eig_Vunw": 0.0002815860338815696,
+          "h1_frac": 0.5803404214139543,
+          "eri_frac": 0.41965957858604575,
+          "eri_offdiag_frac": 0.05727691993466277,
+          "fci_E0": -0.9334140236660853,
+          "fci_E1": -0.8598053577977933,
+          "fci_S1": 3.6044498977965556,
+          "fci_var_nA": 0.12153855260054769,
+          "fci_mean_nA": 2.874219779708061,
+          "E_lb": {
+            "DQG": -0.9411820079546795,
+            "DQG+T1": -0.9344277896725562,
+            "DQG+T2": -0.9334149922097327,
+            "DQG+T1+T2": -0.9334146939824861
+          },
+          "gaps_raw_mha": {
+            "DQG": 7.767984288594265,
+            "DQG+T1": 1.013766006470962,
+            "DQG+T2": 0.0009685436473949594,
+            "DQG+T1+T2": 0.000670316400830373
+          },
+          "gaps_frob_mha": {
+            "DQG": 9.62309687130975,
+            "DQG+T1": 1.2558687199502965,
+            "DQG+T2": 0.001199846574954908,
+            "DQG+T1+T2": 0.0008303981341838804
+          },
+          "lambda": 0.75
+        },
+        {
+          "norm": 0.8382757319005524,
+          "min_eig_Vtilde": 0.00041155099050445754,
+          "min_eig_Vunw": 0.0002994265913283622,
+          "h1_frac": 0.6122847498688718,
+          "eri_frac": 0.38771525013112806,
+          "eri_offdiag_frac": 0.06540855189385242,
+          "fci_E0": -0.9760343255286074,
+          "fci_E1": -0.9014527828426109,
+          "fci_S1": 3.631716390798831,
+          "fci_var_nA": 0.12800104924742506,
+          "fci_mean_nA": 2.869858908354029,
+          "E_lb": {
+            "DQG": -0.9796325685048854,
+            "DQG+T1": -0.9768166703303139,
+            "DQG+T2": -0.9760349732299797,
+            "DQG+T1+T2": -0.976035714548785
+          },
+          "gaps_raw_mha": {
+            "DQG": 3.5982429762780876,
+            "DQG+T1": 0.7823448017065804,
+            "DQG+T2": 0.000647701372313847,
+            "DQG+T1+T2": 0.001389020177655631
+          },
+          "gaps_frob_mha": {
+            "DQG": 4.292433669909652,
+            "DQG+T1": 0.933278600267761,
+            "DQG+T2": 0.0007726590997038264,
+            "DQG+T1+T2": 0.0016569967670499322
+          },
+          "lambda": 0.8
+        },
+        {
+          "norm": 0.8735525200417594,
+          "min_eig_Vtilde": 0.00043481657751760826,
+          "min_eig_Vunw": 0.00031650010031993335,
+          "h1_frac": 0.6365126881805774,
+          "eri_frac": 0.3634873118194227,
+          "eri_offdiag_frac": 0.07252901589578953,
+          "fci_E0": -1.0187566075339036,
+          "fci_E1": -0.9469676839673705,
+          "fci_S1": 3.6642980043370263,
+          "fci_var_nA": 0.1360116696242759,
+          "fci_mean_nA": 2.8645134812665938,
+          "E_lb": {
+            "DQG": -1.0203914864612376,
+            "DQG+T1": -1.0192163395993434,
+            "DQG+T2": -1.0187577082028665,
+            "DQG+T1+T2": -1.0187575811123124
+          },
+          "gaps_raw_mha": {
+            "DQG": 1.6348789273339381,
+            "DQG+T1": 0.4597320654398107,
+            "DQG+T2": 0.0011006689628612065,
+            "DQG+T1+T2": 0.0009735784087805399
+          },
+          "gaps_frob_mha": {
+            "DQG": 1.8715290607321289,
+            "DQG+T1": 0.5262786780328144,
+            "DQG+T2": 0.0012599917436087185,
+            "DQG+T1+T2": 0.0011145047223193847
+          },
+          "lambda": 0.8500000000000001
+        },
+        {
+          "norm": 0.9125635534115096,
+          "min_eig_Vtilde": 0.000455257314157245,
+          "min_eig_Vunw": 0.000331681026105951,
+          "h1_frac": 0.6538920169022229,
+          "eri_frac": 0.346107983097777,
+          "eri_offdiag_frac": 0.07825072930251487,
+          "fci_E0": -1.0616010931802302,
+          "fci_E1": -1.0009844034743833,
+          "fci_S1": 3.703450303527588,
+          "fci_var_nA": 0.1460015255259961,
+          "fci_mean_nA": 2.8579048377685092,
+          "E_lb": {
+            "DQG": -1.0622812084489803,
+            "DQG+T1": -1.0617270652231552,
+            "DQG+T2": -1.0616020487322795,
+            "DQG+T1+T2": -1.0616023461714486
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.6801152687501144,
+            "DQG+T1": 0.1259720429249711,
+            "DQG+T2": 0.000955552049264341,
+            "DQG+T1+T2": 0.0012529912183367742
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.7452798944331985,
+            "DQG+T1": 0.13804193960414013,
+            "DQG+T2": 0.001047107399470562,
+            "DQG+T1+T2": 0.0013730454319073081
+          },
+          "lambda": 0.9
+        },
+        {
+          "norm": 0.9548512470142169,
+          "min_eig_Vtilde": 0.00046482296965441247,
+          "min_eig_Vunw": 0.00033953990619860127,
+          "h1_frac": 0.6654616415867346,
+          "eri_frac": 0.33453835841326546,
+          "eri_offdiag_frac": 0.0823893507868575,
+          "fci_E0": -1.1045934441725898,
+          "fci_E1": -1.067756420119369,
+          "fci_S1": 3.7507638232703755,
+          "fci_var_nA": 0.15854141135829636,
+          "fci_mean_nA": 2.8496576673962415,
+          "E_lb": {
+            "DQG": -1.1047765886864989,
+            "DQG+T1": -1.104607895447584,
+            "DQG+T2": -1.1045945091014675,
+            "DQG+T1+T2": -1.1045940737836677
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.1831445139091059,
+            "DQG+T1": 0.014451274994220498,
+            "DQG+T2": 0.0010649288777475618,
+            "DQG+T1+T2": 0.0006296110779402397
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.19180423598104077,
+            "DQG+T1": 0.015134582522051554,
+            "DQG+T2": 0.0011152824914640407,
+            "DQG+T1+T2": 0.0006593813223881829
+          },
+          "lambda": 0.9500000000000001
+        },
+        {
+          "norm": 0.9999999999999998,
+          "min_eig_Vtilde": 2.2819494298279702e-06,
+          "min_eig_Vunw": 1.7783816844219268e-06,
+          "h1_frac": 0.6722754555428709,
+          "eri_frac": 0.32772454445712906,
+          "eri_offdiag_frac": 0.08496347415206029,
+          "fci_E0": -1.1477665921631075,
+          "fci_E1": -1.143988691851615,
+          "fci_S1": 3.8082504819070597,
+          "fci_var_nA": 0.1743906010521865,
+          "fci_mean_nA": 2.8392608257621723,
+          "E_lb": {
+            "DQG": -1.152273519656405,
+            "DQG+T1": -1.1479387006468973,
+            "DQG+T2": -1.147777842177052,
+            "DQG+T1+T2": -1.1477761736818137
+          },
+          "gaps_raw_mha": {
+            "DQG": 4.506927493297397,
+            "DQG+T1": 0.17210848378979016,
+            "DQG+T2": 0.01125001394441938,
+            "DQG+T1+T2": 0.009581518706225367
+          },
+          "gaps_frob_mha": {
+            "DQG": 4.506927493297398,
+            "DQG+T1": 0.17210848378979018,
+            "DQG+T2": 0.011250013944419381,
+            "DQG+T1+T2": 0.009581518706225369
+          },
+          "lambda": 1.0
+        }
+      ],
+      "crossings": {
+        "t12_frob_50pct": 0.3101335631903078,
+        "t12_frob_10pct": 0.5117276131146283,
+        "t12_frob_1mha": 0.595487836973311,
+        "dqg_frob_50pct": 0.4767230354005506,
+        "dqg_frob_10pct": 0.7384781808351285,
+        "dqg_frob_1mha": 0.8886916628580575
+      }
+    },
+    "sweep_3b_kinetic_tunneling": {
+      "points": [
+        {
+          "norm": 1.0,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.0,
+          "eri_frac": 1.0,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -0.3000000000000006,
+          "fci_E1": -0.3000000000000005,
+          "fci_S1": 4.943847044626373,
+          "fci_var_nA": 0.19969799334849814,
+          "fci_mean_nA": 2.2757189115161505,
+          "E_lb": {
+            "DQG": -0.41250095098186207,
+            "DQG+T1": -0.41250039983737175,
+            "DQG+T2": -0.4125007679933248,
+            "DQG+T1+T2": -0.41250202070948494
+          },
+          "gaps_raw_mha": {
+            "DQG": 112.50095098186146,
+            "DQG+T1": 112.50039983737115,
+            "DQG+T2": 112.5007679933242,
+            "DQG+T1+T2": 112.50202070948434
+          },
+          "gaps_frob_mha": {
+            "DQG": 112.50095098186146,
+            "DQG+T1": 112.50039983737115,
+            "DQG+T2": 112.5007679933242,
+            "DQG+T1+T2": 112.50202070948434
+          },
+          "tau": 0.0
+        },
+        {
+          "norm": 1.0111874208078344,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.022004889975550116,
+          "eri_frac": 0.9779951100244499,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -0.5092465459534186,
+          "fci_E1": -0.41177117959753545,
+          "fci_S1": 2.5807510709511137,
+          "fci_var_nA": 0.29506617473125907,
+          "fci_mean_nA": 2.4782030954904286,
+          "E_lb": {
+            "DQG": -0.539402011637693,
+            "DQG+T1": -0.5394019797930013,
+            "DQG+T2": -0.5328368311685138,
+            "DQG+T1+T2": -0.5328367044462523
+          },
+          "gaps_raw_mha": {
+            "DQG": 30.155465684274407,
+            "DQG+T1": 30.155433839582745,
+            "DQG+T2": 23.590285215095207,
+            "DQG+T1+T2": 23.590158492833744
+          },
+          "gaps_frob_mha": {
+            "DQG": 29.821836252851426,
+            "DQG+T1": 29.821804760478194,
+            "DQG+T2": 23.329290623739173,
+            "DQG+T1+T2": 23.329165303488093
+          },
+          "tau": 0.075
+        },
+        {
+          "norm": 1.044030650891055,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.08256880733944952,
+          "eri_frac": 0.9174311926605504,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -0.752129377366054,
+          "fci_E1": -0.5329198661145937,
+          "fci_S1": 1.872258491774184,
+          "fci_var_nA": 0.3697482483379746,
+          "fci_mean_nA": 2.4526075669656064,
+          "E_lb": {
+            "DQG": -0.7653924904357747,
+            "DQG+T1": -0.7653931040711273,
+            "DQG+T2": -0.7601431251373316,
+            "DQG+T1+T2": -0.7601429656493662
+          },
+          "gaps_raw_mha": {
+            "DQG": 13.263113069720722,
+            "DQG+T1": 13.263726705073253,
+            "DQG+T2": 8.013747771277613,
+            "DQG+T1+T2": 8.013588283312224
+          },
+          "gaps_frob_mha": {
+            "DQG": 12.7037583220387,
+            "DQG+T1": 12.704346078108896,
+            "DQG+T2": 7.675778258462117,
+            "DQG+T1+T2": 7.675625496696691
+          },
+          "tau": 0.15
+        },
+        {
+          "norm": 1.0965856099730655,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.16839916839916835,
+          "eri_frac": 0.8316008316008316,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -1.0127899633337545,
+          "fci_E1": -0.6608719811121774,
+          "fci_S1": 1.4180738770455925,
+          "fci_var_nA": 0.438231000803988,
+          "fci_mean_nA": 2.4273200935015975,
+          "E_lb": {
+            "DQG": -1.020183938468298,
+            "DQG+T1": -1.0201850721357288,
+            "DQG+T2": -1.0164568575164035,
+            "DQG+T1+T2": -1.0164567497824206
+          },
+          "gaps_raw_mha": {
+            "DQG": 7.39397513454354,
+            "DQG+T1": 7.395108801974359,
+            "DQG+T2": 3.666894182648983,
+            "DQG+T1+T2": 3.6667864486661372
+          },
+          "gaps_frob_mha": {
+            "DQG": 6.742724933920254,
+            "DQG+T1": 6.743758749630135,
+            "DQG+T2": 3.343919662359102,
+            "DQG+T1+T2": 3.3438214174233067
+          },
+          "tau": 0.22499999999999998
+        },
+        {
+          "norm": 1.1661903789690602,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.2647058823529411,
+          "eri_frac": 0.7352941176470588,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -1.2836857377479003,
+          "fci_E1": -0.7937253933193774,
+          "fci_S1": 1.1165657120854766,
+          "fci_var_nA": 0.4953274806356873,
+          "fci_mean_nA": 2.403553669257238,
+          "E_lb": {
+            "DQG": -1.2883763239909127,
+            "DQG+T1": -1.2883756273372575,
+            "DQG+T2": -1.2856842312028083,
+            "DQG+T1+T2": -1.2856841715592928
+          },
+          "gaps_raw_mha": {
+            "DQG": 4.69058624301244,
+            "DQG+T1": 4.689889589357232,
+            "DQG+T2": 1.9984934549079902,
+            "DQG+T1+T2": 1.9984338113925304
+          },
+          "gaps_frob_mha": {
+            "DQG": 4.022144520827748,
+            "DQG+T1": 4.0215471452467355,
+            "DQG+T2": 1.7136939996664229,
+            "DQG+T1+T2": 1.7136428557738514
+          },
+          "tau": 0.3
+        },
+        {
+          "norm": 1.25,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.35999999999999993,
+          "eri_frac": 0.64,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -1.561029392340153,
+          "fci_E1": -0.9301378657178367,
+          "fci_S1": 0.9066765195770642,
+          "fci_var_nA": 0.5424345245975557,
+          "fci_mean_nA": 2.3816006027825374,
+          "E_lb": {
+            "DQG": -1.564248399704838,
+            "DQG+T1": -1.5642472004998011,
+            "DQG+T2": -1.5622458769550078,
+            "DQG+T1+T2": -1.5622458418259682
+          },
+          "gaps_raw_mha": {
+            "DQG": 3.219007364684945,
+            "DQG+T1": 3.2178081596481167,
+            "DQG+T2": 1.2164846148547959,
+            "DQG+T1+T2": 1.2164494858151187
+          },
+          "gaps_frob_mha": {
+            "DQG": 2.575205891747956,
+            "DQG+T1": 2.5742465277184934,
+            "DQG+T2": 0.9731876918838367,
+            "DQG+T1+T2": 0.973159588652095
+          },
+          "tau": 0.375
+        },
+        {
+          "norm": 1.3453624047073711,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.44751381215469604,
+          "eri_frac": 0.552486187845304,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -1.842742288777531,
+          "fci_E1": -1.0691739117466152,
+          "fci_S1": 0.7541455383393332,
+          "fci_var_nA": 0.5816705906580628,
+          "fci_mean_nA": 2.3614545840649828,
+          "E_lb": {
+            "DQG": -1.8450672528167626,
+            "DQG+T1": -1.8450672501388108,
+            "DQG+T2": -1.8435394734756487,
+            "DQG+T1+T2": -1.8435394530017146
+          },
+          "gaps_raw_mha": {
+            "DQG": 2.3249640392315474,
+            "DQG+T1": 2.324961361279687,
+            "DQG+T2": 0.7971846981176256,
+            "DQG+T1+T2": 0.797164224183522
+          },
+          "gaps_frob_mha": {
+            "DQG": 1.7281321605959763,
+            "DQG+T1": 1.7281301700900344,
+            "DQG+T2": 0.5925427195886455,
+            "DQG+T1+T2": 0.5925275014332756
+          },
+          "tau": 0.44999999999999996
+        },
+        {
+          "norm": 1.45,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.5243757431629014,
+          "eri_frac": 0.4756242568370988,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -2.1275855189201565,
+          "fci_E1": -1.210178450360511,
+          "fci_S1": 0.6392727556075709,
+          "fci_var_nA": 0.6147924793350406,
+          "fci_mean_nA": 2.3430068328984035,
+          "E_lb": {
+            "DQG": -2.129329134194622,
+            "DQG+T1": -2.129329114033193,
+            "DQG+T2": -2.1281357845827666,
+            "DQG+T1+T2": -2.128135770755652
+          },
+          "gaps_raw_mha": {
+            "DQG": 1.7436152744654265,
+            "DQG+T1": 1.7435951130364558,
+            "DQG+T2": 0.5502656626101832,
+            "DQG+T1+T2": 0.5502518354956187
+          },
+          "gaps_frob_mha": {
+            "DQG": 1.202493292734777,
+            "DQG+T1": 1.202479388301004,
+            "DQG+T2": 0.379493560420816,
+            "DQG+T1+T2": 0.37948402447973706
+          },
+          "tau": 0.525
+        },
+        {
+          "norm": 1.562049935181331,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.5901639344262294,
+          "eri_frac": 0.4098360655737705,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -2.4147685412539173,
+          "fci_E1": -1.352686824629688,
+          "fci_S1": 0.5502134235065723,
+          "fci_var_nA": 0.6431191514621606,
+          "fci_mean_nA": 2.326115796088263,
+          "E_lb": {
+            "DQG": -2.4161148425138905,
+            "DQG+T1": -2.4161134184950006,
+            "DQG+T2": -2.4151632498700804,
+            "DQG+T1+T2": -2.4151632403674657
+          },
+          "gaps_raw_mha": {
+            "DQG": 1.3463012599732593,
+            "DQG+T1": 1.344877241083342,
+            "DQG+T2": 0.3947086161630864,
+            "DQG+T1+T2": 0.39469911354839127
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.8618810638835138,
+            "DQG+T1": 0.8609694292053612,
+            "DQG+T2": 0.25268629848076307,
+            "DQG+T1+T2": 0.2526802150550792
+          },
+          "tau": 0.6
+        },
+        {
+          "norm": 1.6800297616411441,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.6457041629760849,
+          "eri_frac": 0.3542958370239151,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -2.7037585316309025,
+          "fci_E1": -1.4963640488317225,
+          "fci_S1": 0.4795123579878743,
+          "fci_var_nA": 0.667626392928697,
+          "fci_mean_nA": 2.3106347605422775,
+          "E_lb": {
+            "DQG": -2.7048192100591915,
+            "DQG+T1": -2.7048195168966536,
+            "DQG+T2": -2.7040501955476532,
+            "DQG+T1+T2": -2.70405018903042
+          },
+          "gaps_raw_mha": {
+            "DQG": 1.0606784282889414,
+            "DQG+T1": 1.0609852657510466,
+            "DQG+T2": 0.29166391675072845,
+            "DQG+T1+T2": 0.29165739951730885
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.6313450228719837,
+            "DQG+T1": 0.6315276609829927,
+            "DQG+T2": 0.17360639877344514,
+            "DQG+T1+T2": 0.17360251953655992
+          },
+          "tau": 0.6749999999999999
+        },
+        {
+          "norm": 1.8027756377319946,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.6923076923076923,
+          "eri_frac": 0.30769230769230776,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -2.9941803053759903,
+          "fci_E1": -1.640964428867072,
+          "fci_S1": 0.42227806319252287,
+          "fci_var_nA": 0.6890427881001369,
+          "fci_mean_nA": 2.296423378819416,
+          "E_lb": {
+            "DQG": -2.9950322390786464,
+            "DQG+T1": -2.995032246337534,
+            "DQG+T2": -2.9944010231666023,
+            "DQG+T1+T2": -2.9944010181254765
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.8519337026560159,
+            "DQG+T1": 0.851940961543729,
+            "DQG+T2": 0.22071779061194619,
+            "DQG+T1+T2": 0.22071274948620712
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.47256779203417804,
+            "DQG+T1": 0.47257181854061686,
+            "DQG+T2": 0.12243220176284558,
+            "DQG+T1+T2": 0.12242940544940893
+          },
+          "tau": 0.75
+        },
+        {
+          "norm": 1.9293781381574737,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.7313633310946943,
+          "eri_frac": 0.26863666890530563,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -3.2857602129101813,
+          "fci_E1": -1.7863046800536866,
+          "fci_S1": 0.37518257777703196,
+          "fci_var_nA": 0.7079212172528484,
+          "fci_mean_nA": 2.2833523004957788,
+          "E_lb": {
+            "DQG": -3.2864550416028093,
+            "DQG+T1": -3.2864554945088,
+            "DQG+T2": -3.2859305643674213,
+            "DQG+T1+T2": -3.2859305594018173
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.6948286926280467,
+            "DQG+T1": 0.6952815986185357,
+            "DQG+T2": 0.17035145723998113,
+            "DQG+T1+T2": 0.1703464916360531
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.3601309037800114,
+            "DQG+T1": 0.3603656457321108,
+            "DQG+T2": 0.08829345262648416,
+            "DQG+T1+T2": 0.08829087894544682
+          },
+          "tau": 0.825
+        },
+        {
+          "norm": 2.0591260281974,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.7641509433962264,
+          "eri_frac": 0.23584905660377367,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -3.578292861946009,
+          "fci_E1": -1.932245852383498,
+          "fci_S1": 0.33588985781080904,
+          "fci_var_nA": 0.7246885728726786,
+          "fci_mean_nA": 2.2713046244630934,
+          "E_lb": {
+            "DQG": -3.578867021884343,
+            "DQG+T1": -3.5788670418263404,
+            "DQG+T2": -3.5784265545470375,
+            "DQG+T1+T2": -3.57842654779425
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.5741599383339846,
+            "DQG+T1": 0.5741798803313714,
+            "DQG+T2": 0.1336926010284678,
+            "DQG+T1+T2": 0.13368584824080543
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.2788367154178589,
+            "DQG+T1": 0.2788464001079234,
+            "DQG+T2": 0.06492686664036051,
+            "DQG+T1+T2": 0.06492358719676652
+          },
+          "tau": 0.8999999999999999
+        },
+        {
+          "norm": 2.191460700081113,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.7917751171264965,
+          "eri_frac": 0.2082248828735034,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -3.871620408214148,
+          "fci_E1": -2.0786810093907575,
+          "fci_S1": 0.3027155206708123,
+          "fci_var_nA": 0.7396799433935977,
+          "fci_mean_nA": 2.2601758436535944,
+          "E_lb": {
+            "DQG": -3.872100334157744,
+            "DQG+T1": -3.872100340281789,
+            "DQG+T2": -3.871726888470715,
+            "DQG+T1+T2": -3.8717270290025505
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.4799259435959158,
+            "DQG+T1": 0.4799320676411867,
+            "DQG+T2": 0.10648025656712079,
+            "DQG+T1+T2": 0.10662078840262268
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.2189981976761674,
+            "DQG+T1": 0.21900099217997515,
+            "DQG+T2": 0.04858871371189984,
+            "DQG+T1+T2": 0.048652840727956614
+          },
+          "tau": 0.975
+        },
+        {
+          "norm": 2.3259406699226015,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.8151571164510166,
+          "eri_frac": 0.1848428835489834,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -4.165619130680026,
+          "fci_E1": -2.22552669966208,
+          "fci_S1": 0.2744166346853805,
+          "fci_var_nA": 0.7531623159553371,
+          "fci_mean_nA": 2.2498730923639507,
+          "E_lb": {
+            "DQG": -4.1660255010003615,
+            "DQG+T1": -4.166024382805635,
+            "DQG+T2": -4.1657055271409,
+            "DQG+T1+T2": -4.1657056565872095
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.40637032033519205,
+            "DQG+T1": 0.4052521256090458,
+            "DQG+T2": 0.08639646087349462,
+            "DQG+T1+T2": 0.08652590718316588
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.1747122467868944,
+            "DQG+T1": 0.1742314973247065,
+            "DQG+T2": 0.03714473975656893,
+            "DQG+T1+T2": 0.03720039307195447
+          },
+          "tau": 1.05
+        },
+        {
+          "norm": 2.462214450449026,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.8350515463917526,
+          "eri_frac": 0.16494845360824745,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -4.4601904206604885,
+          "fci_E1": -2.3727169605333955,
+          "fci_S1": 0.2500574480263835,
+          "fci_var_nA": 0.7653512698997442,
+          "fci_mean_nA": 2.240314106036101,
+          "E_lb": {
+            "DQG": -4.4605355990360644,
+            "DQG+T1": -4.460535647442268,
+            "DQG+T2": -4.460262481604306,
+            "DQG+T1+T2": -4.4602627373147286
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.34517837557590525,
+            "DQG+T1": 0.34522678177939525,
+            "DQG+T2": 0.07206094381739803,
+            "DQG+T1+T2": 0.07231665424001221
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.140190215971219,
+            "DQG+T1": 0.1402098755924519,
+            "DQG+T2": 0.029266721184361705,
+            "DQG+T1+T2": 0.029370575023156112
+          },
+          "tau": 1.125
+        },
+        {
+          "norm": 2.6,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.8520710059171598,
+          "eri_frac": 0.14792899408284027,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -4.755254550589297,
+          "fci_E1": -2.5201990369933074,
+          "fci_S1": 0.22892104122648776,
+          "fci_var_nA": 0.7764229443417996,
+          "fci_mean_nA": 2.231426103694636,
+          "E_lb": {
+            "DQG": -4.7555509619917515,
+            "DQG+T1": -4.755550970369784,
+            "DQG+T2": -4.75536228739532,
+            "DQG+T1+T2": -4.755335115240929
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.29641140245484365,
+            "DQG+T1": 0.29641978048733364,
+            "DQG+T2": 0.10773680602316205,
+            "DQG+T1+T2": 0.08056465163264193
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.11400438555955525,
+            "DQG+T1": 0.1140076078797437,
+            "DQG+T2": 0.041437233085831554,
+            "DQG+T1+T2": 0.030986404474093048
+          },
+          "tau": 1.2
+        },
+        {
+          "norm": 2.7390691849604676,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.8667110963012329,
+          "eri_frac": 0.1332889036987671,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -5.050746252909156,
+          "fci_E1": -2.667930279871457,
+          "fci_S1": 0.21044964542240874,
+          "fci_var_nA": 0.786522771454444,
+          "fci_mean_nA": 2.2231446989890955,
+          "E_lb": {
+            "DQG": -5.051004303557911,
+            "DQG+T1": -5.0510026422336916,
+            "DQG+T2": -5.050817828773522,
+            "DQG+T1+T2": -5.0508270322747775
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.25805064875505934,
+            "DQG+T1": 0.2563893245355331,
+            "DQG+T2": 0.07157586436612462,
+            "DQG+T1+T2": 0.08077936562145283
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.09421107366398404,
+            "DQG+T1": 0.09360454491011096,
+            "DQG+T2": 0.02613145544447343,
+            "DQG+T1+T2": 0.02949153897425877
+          },
+          "tau": 1.275
+        },
+        {
+          "norm": 2.8792360097775935,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.8793727382388419,
+          "eri_frac": 0.12062726176115807,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -5.346611512676645,
+          "fci_E1": -2.8158758669255106,
+          "fci_S1": 0.1942033711411283,
+          "fci_var_nA": 0.795771957729376,
+          "fci_mean_nA": 2.2154128899713736,
+          "E_lb": {
+            "DQG": -5.346834807402987,
+            "DQG+T1": -5.346834805116901,
+            "DQG+T2": -5.3467171049515,
+            "DQG+T1+T2": -5.3467029179782735
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.22329472634208258,
+            "DQG+T1": 0.22329244025520723,
+            "DQG+T2": 0.10559227485451572,
+            "DQG+T1+T2": 0.09140530162810023
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.07755346403830611,
+            "DQG+T1": 0.07755267004751563,
+            "DQG+T2": 0.03667371292104401,
+            "DQG+T1+T2": 0.03174637345382494
+          },
+          "tau": 1.3499999999999999
+        },
+        {
+          "norm": 3.0203476621077914,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.8903809262811729,
+          "eri_frac": 0.10961907371882709,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -5.64280519506155,
+          "fci_E1": -2.9640071064295324,
+          "fci_S1": 0.1798310677324783,
+          "fci_var_nA": 0.8042723692978893,
+          "fci_mean_nA": 2.2081801476476235,
+          "E_lb": {
+            "DQG": -5.643000820590056,
+            "DQG+T1": -5.643000697474868,
+            "DQG+T2": -5.642903382884444,
+            "DQG+T1+T2": -5.642889033552807
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.1956255285060493,
+            "DQG+T1": 0.19550241331778295,
+            "DQG+T2": 0.09818782289361394,
+            "DQG+T1+T2": 0.08383849125692677
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.06476920884317315,
+            "DQG+T1": 0.0647284469170509,
+            "DQG+T2": 0.03250878172915108,
+            "DQG+T1+T2": 0.027757894334064483
+          },
+          "tau": 1.425
+        },
+        {
+          "norm": 3.1622776601683795,
+          "min_eig_Vtilde": -7.702443984636964e-17,
+          "min_eig_Vunw": -7.702443984636964e-17,
+          "h1_frac": 0.9,
+          "eri_frac": 0.10000000000000002,
+          "eri_offdiag_frac": 0.0,
+          "fci_E0": -5.939289260223514,
+          "fci_E1": -3.112300158779911,
+          "fci_S1": 0.1670493614962206,
+          "fci_var_nA": 0.8121102668749369,
+          "fci_mean_nA": 2.201401607320342,
+          "E_lb": {
+            "DQG": -5.939462043830356,
+            "DQG+T1": -5.939461481323934,
+            "DQG+T2": -5.939377600530475,
+            "DQG+T1+T2": -5.939357086417474
+          },
+          "gaps_raw_mha": {
+            "DQG": 0.1727836068416977,
+            "DQG+T1": 0.17222110041981153,
+            "DQG+T2": 0.08834030696025508,
+            "DQG+T1+T2": 0.06782619395995226
+          },
+          "gaps_frob_mha": {
+            "DQG": 0.05463897399588169,
+            "DQG+T1": 0.05446109384671851,
+            "DQG+T2": 0.02793565791928318,
+            "DQG+T1+T2": 0.021448525793380448
+          },
+          "tau": 1.5
+        }
+      ],
+      "crossings": {
+        "t12_frob_50pct": 0.04731065028026429,
+        "t12_frob_10pct": 0.13287331514929507,
+        "t12_frob_1mha": 0.37228146341656376,
+        "t12_raw_50pct": 0.04744952665962269,
+        "t12_raw_10pct": 0.13441595095662767,
+        "t12_raw_1mha": 0.4137175818509871
+      }
+    }
+  }
+}
