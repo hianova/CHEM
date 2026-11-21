@@ -1,0 +1,11 @@
+build/
+*.o
+*.a
+*.dylib
+*.so
+*.olean
+build/*.json
+__pycache__/
+.pytest_cache/
+.DS_Store
+*.fcidump.tmp
