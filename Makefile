@@ -5,7 +5,7 @@ CC ?= $(if $(LLVM_CLANG),$(LLVM_CLANG),clang)
 PYTHON ?= python3
 LEAN ?= lean
 
-CFLAGS := -std=c17 -O3 -Wall -Wextra -Werror -Wpedantic -Wconversion -pthread -Iinclude -I../FLOW/core
+CFLAGS := -std=c17 -O3 -Wall -Wextra -Werror -Wpedantic -Wconversion -pthread -Iinclude -I../FLOW/core -I../FLOW/sdk
 LDFLAGS := -framework Accelerate -lm -pthread
 
 BUILD := build
@@ -41,6 +41,7 @@ $(LIB): $(LIB_SRCS) $(HDRS) | $(BUILD)
 lean: $(LEAN_OLEAN)
 
 $(LEAN_OLEAN): lean/ChemCert.lean | $(BUILD)
+	@test -f ../FLOW/build/lean/Flow/MolecularBundle.olean && test -f ../FLOW/build/lean/Flow/CholeskySDD.olean || $(MAKE) -C ../FLOW theory
 	LEAN_PATH=../FLOW/build/lean $(LEAN) -DwarningAsError=true -o $@ $<
 
 benchmarks: $(BENCH_DIR)/h16_chain_16e16o.fcidump $(BENCH_DIR)/h4_ry2.0_fplus.fcidump $(BENCH_DIR)/hubbard4_u12.0.fcidump

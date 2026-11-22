@@ -1,6 +1,6 @@
 # CHEM — Certified Ab Initio Quantum Chemistry & Zero-FP-Trust Discovery Engine
 
-`CHEM` (`v0.3.1`) is a standalone first-principles quantum chemistry certification, reaction-path screening, and theoretical discovery engine built on [`../FLOW`](../FLOW/README.md) (`v8.0.0`: `core/flow.h`, `core/searu.h`, `Flow.MolecularBundle`, `Flow.Interval`).
+`CHEM` (`v0.3.1`) is a standalone first-principles quantum chemistry certification, reaction-path screening, and theoretical discovery engine built on [`../FLOW`](../FLOW/README.md) (`v9.0.0`: `core/flow.h`, `core/searu.h`, `sdk/flow_sha256.h`, `Flow.CholeskySDD`, `Flow.Interval`, `Flow.MolecularBundle`).
 
 Its mission is to deliver **mathematically certified two-sided ground-state energy and observable brackets**
 
@@ -24,7 +24,7 @@ For detailed benchmark verification and Frontier 1–4 / Direction C theoretical
 3. **Layer 3 — Variational Witness Funnel, GPC Analyzer & Exact Full-Space Variance**
    - Internal RHF/UHF + `SEARU × 2-Jet` orbital rotation $\to$ Jordan–Wigner FCI / spin-projected Selected CI (`SHCI`), external `--witness` JSON ingestion, full $\alpha,\beta$ 1-RDM SVD Generalized Pauli analyzer (`chem_var_analyze_gpc`), and exact full-Fock-space Hamiltonian variance $\sigma^2 = \|(H - E_{\text{var}})|\psi\rangle\|_2^2$ + Eckart ground-state fidelity lower bounds (`chem_var_eval_variance`).
 4. **Layer 4 — Zero-FP-Trust `ChemI128` Cholesky+SDD & Kernel-Checked Lean 4 Certificates**
-   - Emits `.cert.json`, compact binary `.flowchem` (`FLCH0002`, `2.75x–2.91x` smaller), and standalone **per-molecule `.lean` formal proofs** via pure ISO C17 128-bit integer Cholesky+SDD certification (`chem_cert_verify_exact_chol`, `chem_cert_emit_lean`), compiled with `lean -DwarningAsError=true` and audited by `leanchecker` against [lean/ChemCert.lean](file:///Users/kuangtalin/Documents/CHEM/lean/ChemCert.lean) (Theorems `C1–C20`, including `T1` trace bound `C16`, Coulomb Cholesky PSD `C17`, and rank-1/$p$-POS obstruction theorems `C18–C20`, `0 sorryAx`, `0 Lean.ofReduceBool`).
+   - Emits `.cert.json`, compact binary `.flowchem` (`FLCH0002`, `2.75x–2.91x` smaller), and standalone **per-molecule `.lean` formal proofs** via pure ISO C17 128-bit integer Cholesky+SDD certification (`chem_cert_verify_exact_chol`, `chem_cert_emit_lean`), compiled with `lean -DwarningAsError=true` and audited by `leanchecker` against [lean/ChemCert.lean](lean/ChemCert.lean) (Theorems `C1–C20`, including `T1` trace bound `C16`, Coulomb Cholesky PSD `C17`, and rank-1/$p$-POS obstruction theorems `C18–C20`, `0 sorryAx`, `0 Lean.ofReduceBool`).
 
 ---
 

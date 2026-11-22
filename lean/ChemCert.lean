@@ -9,6 +9,7 @@
     5. Mode B exact spin-squared trace identity (`4 * swap_ab`);
     6. Instantiation of `Flow.MolecularBundle.certified_energy_bracket_from_sos`.
 -/
+import Flow.CholeskySDD
 import Flow.MolecularBundle
 import Flow.Interval
 
@@ -17,6 +18,13 @@ namespace ChemCert
 open Flow.Interval
 open Flow.MolecularBundle
 open Flow.GaugeBundle
+
+export Flow.FiniteSum (absInt absInt_nonneg int_sq_nonneg sumFin sumFin_congr sumFin_zero
+  sumFin_nonneg sumFin_add sumFin_sub sumFin_neg sumFin_mul_left sumFin_mul_right
+  sumFin_swap sumFin_single_hit sumFin_le_sumFin)
+export Flow.CholeskySDD (vecNormSq vecNormSq_nonneg matQuad gramLLt IsSDD
+  sdd_quadratic_form_nonneg gramLLt_psd cholesky_sdd_certified_psd matAt triAt
+  allFinB allFinB_true checkCholeskySDD checkCholeskySDD_sound)
 
 /-- Theorem C1 (Mode A Spin-Adapted Trace Invariants):
     With `N = 2 * ne` electrons in `K` spatial orbitals, weighting singlet (`m=1`)
@@ -159,331 +167,7 @@ theorem subspace_t2_trace_upper_bound
     split <;> omega
   exact Int.mul_le_mul_of_nonpos_right hmin hLam
 
-/-! ## v0.3.0 Formal Foundations: Zero-FP-Trust Cholesky+SDD, GPC Borland–Dennis, Phase Transitions & Eckart Fidelity -/
-
-private theorem int_sq_nonneg_c (z : Int) : 0 ≤ z * z := by
-  by_cases hz : 0 ≤ z
-  · exact Int.mul_nonneg hz hz
-  · have hneg : 0 ≤ -z := by omega
-    have hsq : (-z) * (-z) = z * z := Int.neg_mul_neg z z
-    rw [← hsq]
-    exact Int.mul_nonneg hneg hneg
-
-private theorem sumFin_congr_c {N : Nat} (f g : Fin N → Int) (h : ∀ i, f i = g i) :
-    sumFin N f = sumFin N g := by
-  have hfn : f = g := funext h
-  rw [hfn]
-
-private theorem sumFin_mul_right_c {N : Nat} (f : Fin N → Int) (c : Int) :
-    sumFin N (fun i => f i * c) = sumFin N f * c := by
-  calc
-    sumFin N (fun i => f i * c)
-        = sumFin N (fun i => c * f i) := sumFin_congr_c _ _ (fun i => Int.mul_comm _ _)
-    _ = c * sumFin N f := Flow.GaugeBundle.sumFin_mul_left N c f
-    _ = sumFin N f * c := Int.mul_comm _ _
-
-private theorem sumPrefix_swap_c {N M : Nat} (f : Fin N → Fin M → Int) :
-    ∀ k : Nat,
-      sumPrefix (fun i : Fin N => sumPrefix (fun j : Fin M => f i j) M) k =
-        sumPrefix (fun j : Fin M => sumPrefix (fun i : Fin N => f i j) k) M
-  | 0 => by
-    simp only [sumPrefix]
-    symm
-    exact Flow.GaugeBundle.sumPrefix_zero M
-  | k + 1 => by
-    have ih := sumPrefix_swap_c f k
-    have hstep :
-        sumPrefix (fun j : Fin M => sumPrefix (fun i : Fin N => f i j) (k + 1)) M =
-          sumPrefix (fun j : Fin M =>
-            sumPrefix (fun i : Fin N => f i j) k + (if h : k < N then f ⟨k, h⟩ j else 0)) M := rfl
-    rw [hstep, Flow.GaugeBundle.sumPrefix_add, ← ih]
-    simp only [sumPrefix]
-    by_cases hk : k < N
-    · simp [hk]
-    · simp only [hk, ↓reduceDIte, Int.add_zero]
-      have hz := Flow.GaugeBundle.sumPrefix_zero (N := M) M
-      simp only [hz, Int.add_zero]
-
-private theorem sumFin_swap_c {N M : Nat} (f : Fin N → Fin M → Int) :
-    sumFin N (fun i => sumFin M (fun j => f i j)) =
-      sumFin M (fun j => sumFin N (fun i => f i j)) :=
-  sumPrefix_swap_c f N
-
-def vecNormSq (n : Nat) (v : Fin n → Int) : Int :=
-  sumFin n (fun i => v i * v i)
-
-def matQuad (n : Nat) (M : Fin n → Fin n → Int) (v : Fin n → Int) : Int :=
-  sumFin n (fun i => sumFin n (fun j => v i * M i j * v j))
-
-def gramLLt (n : Nat) (L : Fin n → Fin n → Int) (i j : Fin n) : Int :=
-  sumFin n (fun k => L i k * L j k)
-
-def absInt (z : Int) : Int :=
-  if 0 ≤ z then z else -z
-
-def IsSDD (n : Nat) (E : Fin n → Fin n → Int) : Prop :=
-  (∀ i j, E i j = E j i) ∧
-  (∀ i, sumFin n (fun j => if j = i then 0 else absInt (E i j)) ≤ E i i)
-
-private theorem sdd_pair_nonneg (a x y : Int) :
-    0 ≤ absInt a * (x * x) + 2 * (a * (x * y)) + absInt a * (y * y) := by
-  by_cases ha : 0 ≤ a
-  · have hfa : absInt a = a := by simp [absInt, ha]
-    rw [hfa]
-    have hEq : a * (x * x) + 2 * (a * (x * y)) + a * (y * y) = a * ((x + y) * (x + y)) := by grind
-    rw [hEq]
-    exact Int.mul_nonneg ha (int_sq_nonneg_c (x + y))
-  · have haNeg : 0 ≤ -a := by omega
-    have hfa : absInt a = -a := by simp [absInt, ha]
-    rw [hfa]
-    have hEq : (-a) * (x * x) + 2 * (a * (x * y)) + (-a) * (y * y) = (-a) * ((x - y) * (x - y)) := by grind
-    rw [hEq]
-    exact Int.mul_nonneg haNeg (int_sq_nonneg_c (x - y))
-
-/-- Theorem C9 (Symmetric Diagonally Dominant Quadratic Form Nonnegativity):
-    Any symmetric diagonally dominant `n × n` integer matrix defines a PSD quadratic form. -/
-theorem sdd_quadratic_form_nonneg (n : Nat) (E : Fin n → Fin n → Int)
-    (hSDD : IsSDD n E) : ∀ v : Fin n → Int, 0 ≤ matQuad n E v := by
-  intro v
-  rcases hSDD with ⟨hSymm, hDom⟩
-  let offDiag : Fin n → Int := fun i => sumFin n (fun j => if j = i then 0 else absInt (E i j))
-  let diagSum : Int := sumFin n (fun i => (E i i - offDiag i) * (v i * v i))
-  let offSqI : Int := sumFin n (fun i => offDiag i * (v i * v i))
-  let pairSum : Int :=
-    sumFin n (fun i => sumFin n (fun j =>
-      if j = i then 0 else absInt (E i j) * (v i * v i) + 2 * (E i j * (v i * v j)) + absInt (E i j) * (v j * v j)))
-  have h1 : matQuad n E v = diagSum + offSqI + sumFin n (fun i => sumFin n (fun j => if j = i then 0 else E i j * (v i * v j))) := by
-    have hA : matQuad n E v =
-        sumFin n (fun i => E i i * (v i * v i) + sumFin n (fun j => if j = i then 0 else E i j * (v i * v j))) := by
-      unfold matQuad
-      apply sumFin_congr_c
-      intro i
-      have hSplit :
-          (fun j : Fin n => v i * E i j * v j) =
-            (fun j : Fin n => (if j = i then E i i * (v i * v i) else 0) + (if j = i then 0 else E i j * (v i * v j))) := by
-        funext j
-        by_cases hj : j = i
-        · subst hj; grind
-        · simp [hj]; grind
-      rw [hSplit, Flow.GaugeBundle.sumFin_add, Flow.GaugeBundle.sumFin_single_hit]
-    rw [hA, Flow.GaugeBundle.sumFin_add]
-    have hD : sumFin n (fun i => E i i * (v i * v i)) = diagSum + offSqI := by
-      have hSplit : (fun i => E i i * (v i * v i)) = (fun i => (E i i - offDiag i) * (v i * v i) + offDiag i * (v i * v i)) := by
-        funext i; grind
-      rw [hSplit, Flow.GaugeBundle.sumFin_add]
-    rw [hD]
-  have hOff1 : offSqI = sumFin n (fun i => sumFin n (fun j => if j = i then 0 else absInt (E i j) * (v i * v i))) := by
-    unfold offSqI
-    apply sumFin_congr_c
-    intro i
-    change sumFin n (fun j => if j = i then 0 else absInt (E i j)) * (v i * v i) = _
-    rw [← sumFin_mul_right_c]
-    apply sumFin_congr_c
-    intro j
-    by_cases hj : j = i <;> simp [hj]
-  have hOff2 : offSqI = sumFin n (fun i => sumFin n (fun j => if j = i then 0 else absInt (E i j) * (v j * v j))) := by
-    rw [hOff1]
-    have hSw := sumFin_swap_c (fun i j : Fin n => if j = i then 0 else absInt (E i j) * (v i * v i))
-    rw [hSw]
-    apply sumFin_congr_c
-    intro i
-    apply sumFin_congr_c
-    intro j
-    by_cases hji : j = i
-    · subst hji; rfl
-    · have hij' : i ≠ j := fun h => hji h.symm
-      simp only [hji, hij', ↓reduceIte]
-      rw [hSymm j i]
-  have hPairEq :
-      2 * offSqI + 2 * sumFin n (fun i => sumFin n (fun j => if j = i then 0 else E i j * (v i * v j))) = pairSum := by
-    have hCross :
-        2 * sumFin n (fun i => sumFin n (fun j => if j = i then 0 else E i j * (v i * v j))) =
-          sumFin n (fun i => sumFin n (fun j => if j = i then 0 else 2 * (E i j * (v i * v j)))) := by
-      rw [← Flow.GaugeBundle.sumFin_mul_left]
-      apply sumFin_congr_c
-      intro i
-      rw [← Flow.GaugeBundle.sumFin_mul_left]
-      apply sumFin_congr_c
-      intro j
-      by_cases hj : j = i <;> simp [hj]
-    have hSumOff :
-        offSqI + offSqI =
-          sumFin n (fun i => sumFin n (fun j =>
-            if j = i then 0 else absInt (E i j) * (v i * v i) + absInt (E i j) * (v j * v j))) := by
-      calc offSqI + offSqI
-          = sumFin n (fun i => sumFin n (fun j => if j = i then 0 else absInt (E i j) * (v i * v i))) +
-              sumFin n (fun i => sumFin n (fun j => if j = i then 0 else absInt (E i j) * (v j * v j))) := by
-                rw [← hOff1, ← hOff2]
-        _ = sumFin n (fun i =>
-              sumFin n (fun j => if j = i then 0 else absInt (E i j) * (v i * v i)) +
-              sumFin n (fun j => if j = i then 0 else absInt (E i j) * (v j * v j))) := by
-                rw [Flow.GaugeBundle.sumFin_add]
-        _ = sumFin n (fun i => sumFin n (fun j =>
-              if j = i then 0 else absInt (E i j) * (v i * v i) + absInt (E i j) * (v j * v j))) := by
-                apply sumFin_congr_c; intro i
-                rw [← Flow.GaugeBundle.sumFin_add]
-                apply sumFin_congr_c; intro j
-                by_cases hj : j = i <;> simp [hj]
-    have h2 : 2 * offSqI = offSqI + offSqI := by omega
-    rw [h2, hSumOff, hCross]
-    unfold pairSum
-    rw [← Flow.GaugeBundle.sumFin_add]
-    apply sumFin_congr_c
-    intro i
-    rw [← Flow.GaugeBundle.sumFin_add]
-    apply sumFin_congr_c
-    intro j
-    by_cases hj : j = i <;> simp [hj] <;> omega
-  have h2Quad : 2 * matQuad n E v = 2 * diagSum + pairSum := by
-    omega
-  have hDiagNonneg : 0 ≤ diagSum := by
-    apply Flow.GaugeBundle.sumFin_nonneg
-    intro i
-    have hd : 0 ≤ E i i - offDiag i := by have := hDom i; grind
-    exact Int.mul_nonneg hd (int_sq_nonneg_c (v i))
-  have hPairNonneg : 0 ≤ pairSum := by
-    apply Flow.GaugeBundle.sumFin_nonneg
-    intro i
-    apply Flow.GaugeBundle.sumFin_nonneg
-    intro j
-    by_cases hj : j = i
-    · simp [hj]
-    · simp only [hj, ↓reduceIte]
-      exact sdd_pair_nonneg (E i j) (v i) (v j)
-  omega
-
-private theorem gramLLt_psd_c (n : Nat) (L : Fin n → Fin n → Int) (v : Fin n → Int) :
-    0 ≤ matQuad n (gramLLt n L) v := by
-  have hEq : matQuad n (gramLLt n L) v =
-      sumFin n (fun k => (sumFin n (fun i => v i * L i k)) * (sumFin n (fun j => v j * L j k))) := by
-    unfold matQuad gramLLt
-    calc
-      sumFin n (fun i => sumFin n (fun j => v i * sumFin n (fun k => L i k * L j k) * v j))
-          = sumFin n (fun i => sumFin n (fun j => sumFin n (fun k => (v i * L i k) * (v j * L j k)))) := by
-            apply sumFin_congr_c; intro i
-            apply sumFin_congr_c; intro j
-            rw [← Flow.GaugeBundle.sumFin_mul_left, ← sumFin_mul_right_c]
-            apply sumFin_congr_c; intro k; grind
-      _ = sumFin n (fun i => sumFin n (fun k => sumFin n (fun j => (v i * L i k) * (v j * L j k)))) := by
-            apply sumFin_congr_c; intro i; exact sumFin_swap_c _
-      _ = sumFin n (fun k => sumFin n (fun i => sumFin n (fun j => (v i * L i k) * (v j * L j k)))) :=
-            sumFin_swap_c _
-      _ = sumFin n (fun k => sumFin n (fun i => (v i * L i k) * sumFin n (fun j => v j * L j k))) := by
-            apply sumFin_congr_c; intro k
-            apply sumFin_congr_c; intro i
-            exact Flow.GaugeBundle.sumFin_mul_left n (v i * L i k) (fun j => v j * L j k)
-      _ = sumFin n (fun k => sumFin n (fun i => v i * L i k) * sumFin n (fun j => v j * L j k)) := by
-            apply sumFin_congr_c; intro k
-            exact sumFin_mul_right_c (fun i => v i * L i k) _
-  rw [hEq]
-  apply Flow.GaugeBundle.sumFin_nonneg
-  intro k
-  exact int_sq_nonneg_c _
-
-/-- Theorem C10 (Integer Cholesky + SDD Certified Eigenvalue Lower Bound):
-    If `E = A - mu*I - L*L^T` is symmetric diagonally dominant, then `mu` is an exact PSD floor of `A`. -/
-theorem cholesky_sdd_certified_psd (n : Nat) (A L : Fin n → Fin n → Int) (mu : Int)
-    (hSDD : IsSDD n (fun i j => A i j - (if i = j then mu else 0) - gramLLt n L i j)) :
-    ∀ v : Fin n → Int, mu * vecNormSq n v ≤ matQuad n A v := by
-  intro v
-  let E : Fin n → Fin n → Int := fun i j => A i j - (if i = j then mu else 0) - gramLLt n L i j
-  have hNonneg : 0 ≤ matQuad n E v := sdd_quadratic_form_nonneg n E hSDD v
-  have hGram : 0 ≤ matQuad n (gramLLt n L) v := gramLLt_psd_c n L v
-  have hDecomp : matQuad n E v = matQuad n A v - mu * vecNormSq n v - matQuad n (gramLLt n L) v := by
-    have hD : sumFin n (fun i => sumFin n (fun j => v i * (if i = j then mu else 0) * v j)) = mu * vecNormSq n v := by
-      unfold vecNormSq
-      rw [← Flow.GaugeBundle.sumFin_mul_left]
-      apply sumFin_congr_c
-      intro i
-      have hSub : (fun j : Fin n => v i * (if i = j then mu else 0) * v j) =
-          (fun j : Fin n => if j = i then mu * (v i * v i) else 0) := by
-        funext j
-        by_cases hj : j = i
-        · subst hj; simp; grind
-        · have hij : i ≠ j := fun h => hj h.symm
-          simp [hj, hij]
-      rw [hSub, Flow.GaugeBundle.sumFin_single_hit]
-    unfold matQuad E
-    calc
-      sumFin n (fun i => sumFin n (fun j => v i * (A i j - (if i = j then mu else 0) - gramLLt n L i j) * v j))
-          = sumFin n (fun i => sumFin n (fun j =>
-              (v i * A i j * v j - v i * (if i = j then mu else 0) * v j) - v i * gramLLt n L i j * v j)) := by
-            apply sumFin_congr_c; intro i
-            apply sumFin_congr_c; intro j; grind
-      _ = sumFin n (fun i => sumFin n (fun j => v i * A i j * v j) -
-              sumFin n (fun j => v i * (if i = j then mu else 0) * v j) -
-              sumFin n (fun j => v i * gramLLt n L i j * v j)) := by
-            apply sumFin_congr_c; intro i
-            rw [Flow.GaugeBundle.sumFin_sub, Flow.GaugeBundle.sumFin_sub]
-      _ = matQuad n A v -
-            sumFin n (fun i => sumFin n (fun j => v i * (if i = j then mu else 0) * v j)) -
-            matQuad n (gramLLt n L) v := by
-            rw [Flow.GaugeBundle.sumFin_sub, Flow.GaugeBundle.sumFin_sub]; rfl
-      _ = matQuad n A v - mu * vecNormSq n v - matQuad n (gramLLt n L) v := by
-            rw [hD]
-  omega
-
-def matAt {n : Nat} (rows : List (List Int)) (i j : Fin n) : Int :=
-  (rows.getD i.val []).getD j.val 0
-
-def triAt {n : Nat} (rows : List (List Int)) (i k : Fin n) : Int :=
-  if k.val ≤ i.val then matAt rows i k else 0
-
-private def allFinAux (n : Nat) (p : Fin n → Bool) : (k : Nat) → k ≤ n → Bool
-  | 0, _ => true
-  | k + 1, hk => allFinAux n p k (Nat.le_of_lt hk) && p ⟨k, hk⟩
-
-def allFinB (n : Nat) (p : Fin n → Bool) : Bool :=
-  allFinAux n p n (Nat.le_refl n)
-
-private theorem allFinAux_true (n : Nat) (p : Fin n → Bool) :
-    ∀ k (hk : k ≤ n), allFinAux n p k hk = true → ∀ j (hj : j < k), p ⟨j, Nat.lt_of_lt_of_le hj hk⟩ = true
-  | 0, _, _, _, hj => by omega
-  | k + 1, hk, hall, j, hj => by
-    simp only [allFinAux, Bool.and_eq_true] at hall
-    by_cases hjk : j = k
-    · subst hjk; exact hall.2
-    · have hjlt : j < k := by omega
-      exact allFinAux_true n p k (Nat.le_of_lt hk) hall.1 j hjlt
-
-theorem allFinB_true (n : Nat) (p : Fin n → Bool) (h : allFinB n p = true) :
-    ∀ i : Fin n, p i = true := by
-  intro i
-  exact allFinAux_true n p n (Nat.le_refl n) h i.val i.isLt
-
-def checkCholeskySDD (n : Nat) (A L : List (List Int)) (mu : Int) : Bool :=
-  let E : Fin n → Fin n → Int := fun i j =>
-    matAt A i j - (if i = j then mu else 0) - gramLLt n (triAt L) i j
-  let symOk := allFinB n (fun i => allFinB n (fun j => decide (matAt A i j = matAt A j i)))
-  let domOk := allFinB n (fun i =>
-    decide (sumFin n (fun j => if j = i then 0 else absInt (E i j)) ≤ E i i))
-  symOk && domOk
-
-/-- Kernel-verifiable soundness for arbitrary block size `n` using row-major `List (List Int)`. -/
-theorem checkCholeskySDD_sound (n : Nat) (A L : List (List Int)) (mu : Int)
-    (hCheck : checkCholeskySDD n A L mu = true) :
-    ∀ v : Fin n → Int, mu * vecNormSq n v ≤ matQuad n (matAt A) v := by
-  unfold checkCholeskySDD at hCheck
-  simp only [Bool.and_eq_true] at hCheck
-  have hSymmMat : ∀ i j : Fin n, matAt A i j = matAt A j i := by
-    intro i j
-    have hi := allFinB_true n _ hCheck.1 i
-    have hj := allFinB_true n _ hi j
-    exact of_decide_eq_true hj
-  have hDomE : ∀ i : Fin n,
-      sumFin n (fun j => if j = i then 0 else absInt (matAt A i j - (if i = j then mu else 0) - gramLLt n (triAt L) i j)) ≤
-        matAt A i i - (if i = i then mu else 0) - gramLLt n (triAt L) i i := by
-    intro i
-    simpa using of_decide_eq_true (allFinB_true n _ hCheck.2 i)
-  refine cholesky_sdd_certified_psd n (matAt A) (triAt L) mu ⟨?_, hDomE⟩
-  intro i j
-  have hg : gramLLt n (triAt L) i j = gramLLt n (triAt L) j i := by
-    unfold gramLLt
-    apply sumFin_congr_c; intro k; exact Int.mul_comm _ _
-  by_cases hij : i = j
-  · subst hij; rfl
-  · have hji : j ≠ i := fun h => hij h.symm
-    simp only [hij, hji, ↓reduceIte, hSymmMat i j, hg]
+/-! ## v0.3.0 Formal Foundations: Zero-FP-Trust Cholesky+SDD (`Flow.CholeskySDD`), GPC Borland–Dennis, Phase Transitions & Eckart Fidelity -/
 
 /-- Theorem C11 (Exact Borland–Dennis Generalized Pauli Constraint for `(3e,3o)`):
     Pure `(2α, 1β)` states in 6 spin-orbitals with SVD weights `p1 ≥ p2 ≥ p3 ≥ 0`,
@@ -646,34 +330,34 @@ theorem coulomb_psd_cholesky_nonneg
     calc
       sumFin M (fun a => sumFin M (fun b => (sumFin R (fun mu => B mu a * B mu b)) * (x a * x b)))
           = sumFin M (fun a => sumFin M (fun b => sumFin R (fun mu => B mu a * B mu b * (x a * x b)))) := by
-              apply sumFin_congr_c; intro a
-              apply sumFin_congr_c; intro b
-              exact (sumFin_mul_right_c (fun mu => B mu a * B mu b) (x a * x b)).symm
+              apply Flow.FiniteSum.sumFin_congr; intro a
+              apply Flow.FiniteSum.sumFin_congr; intro b
+              exact (Flow.FiniteSum.sumFin_mul_right R (fun mu => B mu a * B mu b) (x a * x b)).symm
       _ = sumFin M (fun a => sumFin R (fun mu => sumFin M (fun b => B mu a * B mu b * (x a * x b)))) := by
-            apply sumFin_congr_c; intro a
-            exact sumFin_swap_c (fun b mu => B mu a * B mu b * (x a * x b))
+            apply Flow.FiniteSum.sumFin_congr; intro a
+            exact Flow.FiniteSum.sumFin_swap (fun b mu => B mu a * B mu b * (x a * x b))
       _ = sumFin R (fun mu => sumFin M (fun a => sumFin M (fun b => B mu a * B mu b * (x a * x b)))) := by
-            exact sumFin_swap_c (fun a mu => sumFin M (fun b => B mu a * B mu b * (x a * x b)))
+            exact Flow.FiniteSum.sumFin_swap (fun a mu => sumFin M (fun b => B mu a * B mu b * (x a * x b)))
       _ = sumFin R (fun mu => sumFin M (fun a => sumFin M (fun b => (B mu a * x a) * (B mu b * x b)))) := by
-            apply sumFin_congr_c; intro mu
-            apply sumFin_congr_c; intro a
-            apply sumFin_congr_c; intro b
+            apply Flow.FiniteSum.sumFin_congr; intro mu
+            apply Flow.FiniteSum.sumFin_congr; intro a
+            apply Flow.FiniteSum.sumFin_congr; intro b
             grind
       _ = sumFin R (fun mu => (sumFin M (fun a => B mu a * x a)) * (sumFin M (fun b => B mu b * x b))) := by
-            apply sumFin_congr_c; intro mu
+            apply Flow.FiniteSum.sumFin_congr; intro mu
             have hin :
                 sumFin M (fun a => sumFin M (fun b => (B mu a * x a) * (B mu b * x b))) =
                   sumFin M (fun a => (B mu a * x a) * sumFin M (fun b => B mu b * x b)) := by
-              apply sumFin_congr_c; intro a
-              exact Flow.GaugeBundle.sumFin_mul_left M (B mu a * x a) (fun b => B mu b * x b)
+              apply Flow.FiniteSum.sumFin_congr; intro a
+              exact Flow.FiniteSum.sumFin_mul_left M (B mu a * x a) (fun b => B mu b * x b)
             rw [hin]
-            exact sumFin_mul_right_c (fun a => B mu a * x a) (sumFin M (fun b => B mu b * x b))
+            exact Flow.FiniteSum.sumFin_mul_right M (fun a => B mu a * x a) (sumFin M (fun b => B mu b * x b))
   have hPos :
       0 ≤ sumFin R (fun mu =>
             (sumFin M (fun a => B mu a * x a)) * (sumFin M (fun b => B mu b * x b))) := by
-    apply Flow.GaugeBundle.sumFin_nonneg
+    apply Flow.FiniteSum.sumFin_nonneg
     intro mu
-    exact int_sq_nonneg_c (sumFin M (fun a => B mu a * x a))
+    exact Flow.FiniteSum.int_sq_nonneg (sumFin M (fun a => B mu a * x a))
   rw [hEq]
   exact ⟨hPos, rfl⟩
 
@@ -902,7 +586,7 @@ theorem rank1_coulomb_p_pos_hierarchy_obstruction :
         have hsqneg : (-d) * (-d) = d * d := Int.neg_mul_neg d d
         rw [hsqneg] at h1
         exact h1
-    have hD2 : 0 ≤ (2 * p - 1) * (2 * p - 1) := int_sq_nonneg_c (2 * p - 1)
+    have hD2 : 0 ≤ (2 * p - 1) * (2 * p - 1) := int_sq_nonneg (2 * p - 1)
     have hmul := Int.mul_le_mul_of_nonneg_left hsq hD2
     rw [Int.mul_one] at hmul
     change (2 * p - 1) * (2 * p - 1) - (2 * p - 1) * (4 * (p * p) - 2 * p - 1) ≤
