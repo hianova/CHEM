@@ -3047,12 +3047,28 @@ static int mf_ctx_init_ext(ChemMFContext *ctx, int K, int na, int nb, int two_s,
         ctx->scr_D1 = (double *)calloc((size_t)(ctx->m1 > 0 ? ctx->m1 : 1) *
                                            (size_t)(ctx->m1 > 0 ? ctx->m1 : 1),
                                        sizeof(double));
+        if (!ctx->scr_St || !ctx->scr_Tt || !ctx->scr_D0 || !ctx->scr_D1) {
+            mf_ctx_free(ctx);
+            set_err(err, err_sz, "out of memory initializing singlet scratch buffers");
+            return -1;
+        }
     } else {
         size_t naa_sz = (size_t)(ctx->naa > 0 ? ctx->naa : 1);
         size_t nab_sz = (size_t)ctx->nab;
         ctx->scr_D0 = (double *)calloc(naa_sz * naa_sz, sizeof(double));
         ctx->scr_D1 = (double *)calloc(naa_sz * naa_sz, sizeof(double));
         ctx->scr_D2 = (double *)calloc(nab_sz * nab_sz, sizeof(double));
+        if (!ctx->scr_D0 || !ctx->scr_D1 || !ctx->scr_D2) {
+            mf_ctx_free(ctx);
+            set_err(err, err_sz, "out of memory initializing RDM2 scratch buffers");
+            return -1;
+        }
+    }
+    if (!ctx->b_eq || !ctx->q0 || !ctx->C_D || !ctx->scr_ga || !ctx->scr_gb ||
+        !ctx->scr_M0 || !ctx->scr_M1 || !ctx->scr_M2 || !ctx->ev_val) {
+        mf_ctx_free(ctx);
+        set_err(err, err_sz, "out of memory initializing matrix-free core buffers");
+        return -1;
     }
 
     if (ctx->t2_enabled) {
@@ -3603,9 +3619,10 @@ static int normal_eq_init(const ChemMFContext *ctx, NormalEqSolver *ns, int allo
     ns->aeq_rhs = (double *)malloc((size_t)(meq > 0 ? meq : 1) * sizeof(double));
     ns->tmp_d   = (double *)malloc((size_t)nD * sizeof(double));
 
-    if (!ns->S_eq || (use_u_eq && !ns->U_eq) || (nD > 0 && !ns->H_diag_inv) || !ns->r_cg ||
-        !ns->buf_G || !ns->v0 || !ns->aeq_rhs ||
-        (ctx->t2_enabled && !ns->buf_T2) || (ctx->t1_enabled && !ns->buf_T1)) {
+    if (!ns->S_eq || (use_u_eq && !ns->U_eq) || (nD > 0 && (!ns->H_diag_inv || !ns->r_cg ||
+        !ns->z_cg || !ns->p_cg || !ns->Ap_cg || !ns->buf_d || !ns->v0 || !ns->v_D ||
+        !ns->f_D || !ns->tmp_d)) || (nQ > 0 && !ns->buf_Q) || (nG > 0 && !ns->buf_G) ||
+        !ns->aeq_rhs || (ctx->t2_enabled && !ns->buf_T2) || (ctx->t1_enabled && !ns->buf_T1)) {
         normal_eq_free(ns);
         set_err(err, err_sz, "out of memory allocating normal equation workspace");
         return -1;
@@ -3769,9 +3786,18 @@ static int normal_eq_init(const ChemMFContext *ctx, NormalEqSolver *ns, int allo
     }
 
     double *e_col = (double *)calloc((size_t)(meq > 0 ? meq : 1), sizeof(double));
-    double *a_m   = (double *)malloc((size_t)nD * sizeof(double));
-    double *u_m   = (double *)malloc((size_t)nD * sizeof(double));
+    double *a_m   = (double *)malloc((size_t)(nD > 0 ? nD : 1) * sizeof(double));
+    double *u_m   = (double *)malloc((size_t)(nD > 0 ? nD : 1) * sizeof(double));
     double *su_m  = (double *)malloc((size_t)(meq > 0 ? meq : 1) * sizeof(double));
+    if (!e_col || !a_m || !u_m || !su_m) {
+        free(e_col);
+        free(a_m);
+        free(u_m);
+        free(su_m);
+        normal_eq_free(ns);
+        set_err(err, err_sz, "out of memory allocating constraint scratch in normal_eq_init");
+        return -1;
+    }
 
     for (int m = 0; m < meq; m++) {
         if (m > 0) e_col[m - 1] = 0.0;
@@ -4183,6 +4209,12 @@ static int solve_trivial_space_cost(const ChemHam *ham, double e_core, const dou
     } else if (!custom_C_D && ne == 1) {
         double *H1 = (double *)malloc((size_t)K * (size_t)K * sizeof(double));
         double *ev = (double *)malloc((size_t)K * sizeof(double));
+        if (!H1 || !ev) {
+            free(H1);
+            free(ev);
+            set_err(err, err_sz, "out of memory in solve_trivial_space_cost");
+            return -1;
+        }
         __LAPACK_int n = (__LAPACK_int)K, lwork = -1, liwork = -1, info = 0;
         double wq = 0.0;
         __LAPACK_int iwq = 0;
@@ -4192,6 +4224,14 @@ static int solve_trivial_space_cost(const ChemHam *ham, double e_core, const dou
         liwork = iwq + 8;
         double *wk = (double *)malloc((size_t)lwork * sizeof(double));
         __LAPACK_int *iwk = (__LAPACK_int *)malloc((size_t)liwork * sizeof(__LAPACK_int));
+        if (!wk || !iwk) {
+            free(H1);
+            free(ev);
+            free(wk);
+            free(iwk);
+            set_err(err, err_sz, "out of memory in solve_trivial_space_cost eigensolver");
+            return -1;
+        }
         dsyevd_("N", "U", &n, H1, &n, ev, wk, &lwork, iwk, &liwork, &info);
         E_exact += ev[0];
         free(H1);
@@ -4883,8 +4923,13 @@ ChemSession *chem_session_create(int K, int nelec, int ms2, int mode_in, int two
         return NULL;
     }
 
-    double b2 = dot_vec(sess->ctx.meq, sess->ctx.b_eq, sess->ctx.b_eq) +
-                dot_vec(sess->ctx.nQ, sess->ctx.q0, sess->ctx.q0);
+    double b2 = 0.0;
+    if (sess->ctx.meq > 0 && sess->ctx.b_eq) {
+        b2 += dot_vec(sess->ctx.meq, sess->ctx.b_eq, sess->ctx.b_eq);
+    }
+    if (sess->ctx.nQ > 0 && sess->ctx.q0) {
+        b2 += dot_vec(sess->ctx.nQ, sess->ctx.q0, sess->ctx.q0);
+    }
     if (sess->ctx.t1_enabled && sess->ctx.nT1 > 0 && sess->ctx.t1_0) {
         b2 += dot_vec(sess->ctx.nT1, sess->ctx.t1_0, sess->ctx.t1_0);
     }
@@ -6247,21 +6292,25 @@ static int load_cert_bin(const char *fcidump_override, const char *buf, size_t l
 
     if (lc->dw.meq > 0) {
         lc->dw.y_eq = (double *)malloc((size_t)lc->dw.meq * sizeof(double));
+        if (!lc->dw.y_eq) { snprintf(msg, msg_sz, "out of memory reading binary y_eq"); return -1; }
         memcpy(lc->dw.y_eq, ptr, (size_t)lc->dw.meq * sizeof(double));
         ptr += (size_t)lc->dw.meq * sizeof(double);
     }
     if (lc->dw.nQ > 0) {
         lc->dw.Z_Q = (double *)malloc((size_t)lc->dw.nQ * sizeof(double));
+        if (!lc->dw.Z_Q) { snprintf(msg, msg_sz, "out of memory reading binary Z_Q"); return -1; }
         memcpy(lc->dw.Z_Q, ptr, (size_t)lc->dw.nQ * sizeof(double));
         ptr += (size_t)lc->dw.nQ * sizeof(double);
     }
     if (lc->dw.nG > 0) {
         lc->dw.Z_G = (double *)malloc((size_t)lc->dw.nG * sizeof(double));
+        if (!lc->dw.Z_G) { snprintf(msg, msg_sz, "out of memory reading binary Z_G"); return -1; }
         memcpy(lc->dw.Z_G, ptr, (size_t)lc->dw.nG * sizeof(double));
         ptr += (size_t)lc->dw.nG * sizeof(double);
     }
     if (lc->dw.nT2 > 0) {
         lc->dw.Z_T2 = (double *)malloc((size_t)lc->dw.nT2 * sizeof(double));
+        if (!lc->dw.Z_T2) { snprintf(msg, msg_sz, "out of memory reading binary Z_T2"); return -1; }
         memcpy(lc->dw.Z_T2, ptr, (size_t)lc->dw.nT2 * sizeof(double));
         ptr += (size_t)lc->dw.nT2 * sizeof(double);
     }

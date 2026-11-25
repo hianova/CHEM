@@ -288,13 +288,22 @@ static double run_scf_diis(const ChemHam *ham, int restricted, double *C_a_out, 
     double *eva = (double *)calloc(ksz, sizeof(double));
     double *evb = (double *)calloc(ksz, sizeof(double));
 
-    double *hist_Fa[MAX_DIIS_HIST], *hist_Fb[MAX_DIIS_HIST];
-    double *hist_ea[MAX_DIIS_HIST], *hist_eb[MAX_DIIS_HIST];
-    for (int i = 0; i < MAX_DIIS_HIST; i++) {
+    double *hist_Fa[MAX_DIIS_HIST] = {0}, *hist_Fb[MAX_DIIS_HIST] = {0};
+    double *hist_ea[MAX_DIIS_HIST] = {0}, *hist_eb[MAX_DIIS_HIST] = {0};
+    int alloc_ok = (Pa && Pb && Fa && Fb && Va && Vb && eva && evb);
+    for (int i = 0; i < MAX_DIIS_HIST && alloc_ok; i++) {
         hist_Fa[i] = (double *)calloc(k2, sizeof(double));
         hist_Fb[i] = (double *)calloc(k2, sizeof(double));
         hist_ea[i] = (double *)calloc(k2, sizeof(double));
         hist_eb[i] = (double *)calloc(k2, sizeof(double));
+        if (!hist_Fa[i] || !hist_Fb[i] || !hist_ea[i] || !hist_eb[i]) alloc_ok = 0;
+    }
+    if (!alloc_ok) {
+        free(Pa); free(Pb); free(Fa); free(Fb); free(Va); free(Vb); free(eva); free(evb);
+        for (int i = 0; i < MAX_DIIS_HIST; i++) {
+            free(hist_Fa[i]); free(hist_Fb[i]); free(hist_ea[i]); free(hist_eb[i]);
+        }
+        return det_diag_energy(ham, canonical_hf_det(na, nb));
     }
 
     /* Core-Hamiltonian guess (plus canonical HF det check) */
@@ -437,6 +446,11 @@ static double run_scf_diis(const ChemHam *ham, int restricted, double *C_a_out, 
 
         double *Pa_new = (double *)malloc(k2 * sizeof(double));
         double *Pb_new = (double *)malloc(k2 * sizeof(double));
+        if (!Pa_new || !Pb_new) {
+            free(Pa_new);
+            free(Pb_new);
+            break;
+        }
         density_from_c_rows(K, na, Va, Pa_new);
         density_from_c_rows(K, nb, Vb, Pb_new);
 
@@ -790,6 +804,12 @@ static int solve_ci_subspace(const ChemHam *ham, int ndet, const uint64_t *dets,
     /* Seed initial vector from small dense diag of lowest n_seed determinants */
     double *H0 = (double *)calloc((size_t)n_seed * (size_t)n_seed, sizeof(double));
     double *ev0 = (double *)malloc((size_t)n_seed * sizeof(double));
+    if (!H0 || !ev0) {
+        free(H0);
+        free(ev0);
+        free(V); free(HV); free(ritz_vec); free(res_vec); free(Hsub); free(ev_sub);
+        return -1;
+    }
     for (int i = 0; i < n_seed; i++) {
         H0[(size_t)i * (size_t)n_seed + (size_t)i] = diag[order[i]];
         for (int j = 0; j < i; j++) {
@@ -866,6 +886,11 @@ static int solve_ci_subspace(const ChemHam *ham, int ndet, const uint64_t *dets,
             int keep = (need_excited && m >= 2) ? 2 : 1;
             double *Vnew = (double *)calloc((size_t)keep * (size_t)ndet, sizeof(double));
             double *HVnew = (double *)calloc((size_t)keep * (size_t)ndet, sizeof(double));
+            if (!Vnew || !HVnew) {
+                free(Vnew);
+                free(HVnew);
+                break;
+            }
             for (int r = 0; r < keep; r++) {
                 for (int j = 0; j < m; j++) {
                     double c = Hsub[(size_t)r * (size_t)m + (size_t)j];
@@ -1100,6 +1125,11 @@ static int run_heatbath_shci(const ChemHam *ham, const ChemVarOpts *opts,
     int *hb_ss_len = (naa > 0) ? (int *)calloc((size_t)naa, sizeof(int)) : NULL;
     HBEntry *hb_os = (HBEntry *)malloc((size_t)nab * (size_t)nab * sizeof(HBEntry));
     int *hb_os_len = (int *)calloc((size_t)nab, sizeof(int));
+    if ((naa > 0 && (!hb_ss || !hb_ss_len)) || !hb_os || !hb_os_len) {
+        free(hb_ss); free(hb_ss_len); free(hb_os); free(hb_os_len);
+        free(dets); detset_free(&ds);
+        return -1;
+    }
 
     int pair_ij[CHEM_MAX_ORBITALS * CHEM_MAX_ORBITALS][2];
     int np = 0;
@@ -1193,6 +1223,11 @@ static int run_heatbath_shci(const ChemHam *ham, const ChemVarOpts *opts,
     }
 
     double *psi = (double *)calloc((size_t)max_dets, sizeof(double));
+    if (!psi) {
+        free(hb_ss); free(hb_ss_len); free(hb_os); free(hb_os_len);
+        free(dets); detset_free(&ds);
+        return -1;
+    }
     double E_cur = e_hf;
 
     /* Precompute pair index table for fast same-spin lookup */

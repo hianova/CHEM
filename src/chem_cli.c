@@ -628,13 +628,26 @@ static int cmd_selftest(int argc, char **argv) {
 
     /* Tamper test: corrupt E_lb_cert slightly in JSON + flip byte in binary cert */
     FILE *fp_r = fopen(tmp_cert, "rb");
-    fseek(fp_r, 0, SEEK_END);
+    if (!fp_r || fseek(fp_r, 0, SEEK_END) != 0) {
+        if (fp_r) fclose(fp_r);
+        fprintf(stderr, "FAIL open tamper cert: %s\n", tmp_cert);
+        return 1;
+    }
     long csz = ftell(fp_r);
-    fseek(fp_r, 0, SEEK_SET);
+    if (csz < 0 || fseek(fp_r, 0, SEEK_SET) != 0) {
+        fclose(fp_r);
+        fprintf(stderr, "FAIL stat tamper cert: %s\n", tmp_cert);
+        return 1;
+    }
     char *cbuf = (char *)malloc((size_t)csz + 1U);
-    fread(cbuf, 1, (size_t)csz, fp_r);
+    if (!cbuf) {
+        fclose(fp_r);
+        fprintf(stderr, "OOM reading tamper cert\n");
+        return 1;
+    }
+    size_t nread = (csz > 0) ? fread(cbuf, 1, (size_t)csz, fp_r) : 0U;
     fclose(fp_r);
-    cbuf[csz] = '\0';
+    cbuf[nread] = '\0';
     char *pos = strstr(cbuf, "\"E_lb_cert\": ");
     if (pos) {
         char *nump = pos + strlen("\"E_lb_cert\": ");
