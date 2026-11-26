@@ -1,0 +1,58 @@
+name: CI
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches: [ main, "feat/**", "refactor/**" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-chem:
+    name: CHEM Accelerate FCI/SHCI/RDM2 & Lean 4 Cert Verification (macos-latest)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout FLOW (main)
+        uses: actions/checkout@v6
+        with:
+          repository: hianova/FLOW
+          ref: main
+          path: FLOW
+
+      - name: Checkout CHEM
+        uses: actions/checkout@v6
+        with:
+          path: CHEM
+
+      - name: Setup Python & numpy (macOS)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python numpy
+        run: python3 -m pip install --upgrade pip numpy
+
+      - name: Cache Lean 4 Toolchain
+        uses: actions/cache@v5
+        with:
+          path: ~/.elan
+          key: ${{ runner.os }}-${{ runner.arch }}-elan-lean-4.36.0
+
+      - name: Install Lean 4 Toolchain
+        run: |
+          set -euo pipefail
+          if ! "$HOME/.elan/bin/lean" --version >/dev/null 2>&1; then
+            curl --retry 5 -sSfL https://elan.lean-lang.org/elan-init.sh -o /tmp/elan-init.sh
+            sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.36.0
+          fi
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build FLOW & Run CHEM Full Certification Suite
+        run: |
+          export PATH="$HOME/.elan/bin:$PATH"
+          make -C FLOW all lean theory CC=clang CXX=clang++
+          make -C CHEM clean
+          make -C CHEM verify CC=clang
