@@ -1,0 +1,15 @@
+# FLOW v10.0.0 ArenaSchema: 64-byte CHEM Variational-Dual Veto Wire Cell
+arena 2 chem_wire build/chem_wire.h chem_wire_cell_t chem_wire_map_t chem_wire_arena_t
+
+layout chem_veto_wire chem_veto_wire_t
+  field e_lb_q32 0 i64 1
+  field e_ub_q32 64 i64 1
+  field e_ai_q32 128 i64 1
+  field veto_tol_q32 192 i64 1
+  field min_eig_q32 256 i64 1
+  field interval_q32 320 i64 1
+  field vetoed 384 u32 1
+  field iter_stopped 416 u32 1
+  field seq_u64 448 u64 1
+
+region veto 0 2 chem_veto_wire CHEM_SLOT_VETO -
