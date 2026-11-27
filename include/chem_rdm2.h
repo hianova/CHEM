@@ -250,10 +250,21 @@ int chem_cert_write_bin(const char *path, const ChemHam *ham, const char *fcidum
                         const ChemSolveResult *res, const struct ChemVarResult *var_opt,
                         const ChemSolveOpts *opts, char *err, size_t err_sz);
 
+/* Writes canonical Columnar Binary Certificate ("CHMC", .cert.bin) with SHA-256 trailer */
+int chem_cert_write_chmc(const char *path, const ChemHam *ham, const char *fcidump_path,
+                         const ChemSolveResult *res, const struct ChemVarResult *var_opt,
+                         const ChemSolveOpts *opts, char *err, size_t err_sz);
+
+/* Packs an existing .cert.json file losslessly into canonical "CHMC" (.cert.bin) */
+int chem_cert_pack(const char *json_path, const char *bin_path, char *err, size_t err_sz);
+
+/* Unpacks a canonical "CHMC" (.cert.bin) file losslessly into .cert.json */
+int chem_cert_unpack(const char *bin_path, const char *json_path, char *err, size_t err_sz);
+
 int chem_cert_verify_file(const char *fcidump_override, const char *cert_path,
                           ChemCertVerifyResult *out);
 
-/* Zero-FP-Trust integer Cholesky + SDD exact verifier for JSON & .flowchem certificates */
+/* Zero-FP-Trust integer Cholesky + SDD exact verifier for JSON, .cert.bin, & .flowchem certs */
 int chem_cert_verify_exact_chol(const char *fcidump_override, const char *cert_path,
                                 ChemExactVerifyResult *out);
 

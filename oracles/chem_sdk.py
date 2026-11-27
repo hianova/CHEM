@@ -244,6 +244,14 @@ class ChemOracle:
             if os.path.exists(tmp_json):
                 os.remove(tmp_json)
 
+    def cert_pack(self, json_path, bin_path):
+        out = self._run(["cert-pack", json_path, bin_path])
+        return {"ok": True, "bin_path": bin_path, "message": out.strip()}
+
+    def cert_unpack(self, bin_path, json_path):
+        out = self._run(["cert-unpack", bin_path, json_path])
+        return {"ok": True, "json_path": json_path, "message": out.strip()}
+
     def cert_verify(self, cert_path, fcidump_path=None):
         args = ["cert-verify"]
         if fcidump_path:

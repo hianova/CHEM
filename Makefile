@@ -62,7 +62,7 @@ test-tools: $(BIN) $(LIB)
 	$(PYTHON) oracles/test_tools.py
 
 verify: all selftest bench atlas
-	@for c in $(CERT_DIR)/*.cert.json $(CERT_DIR)/*.flowchem; do \
+	@for c in $(CERT_DIR)/*.cert.json $(CERT_DIR)/*.flowchem $(CERT_DIR)/*.cert.bin; do \
 		[ -e "$$c" ] || continue; \
 		./$(BIN) cert-verify "$$c" || exit 1; \
 		./$(BIN) exact-verify "$$c" || exit 1; \

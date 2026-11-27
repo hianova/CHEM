@@ -5,7 +5,7 @@
 - **Python/NumPy Independent Adjoint Max Error (DQG / T2):** `3.20e-16` / `7.98e-18` (`< 1e-14` PASS)
 - **Mode A vs Mode B `H4 (Ry=2.0)` Hierarchy:** `E_LB(B) = -1.94111588 <= E_LB(A) = -1.93950090 <= E_FCI = -1.93943162` (`|A-B| = 1.615 mHa`, PASS)
 - **Independent Certificate Audit (`28` `.cert.json` files):** max `|E_lb_py - E_lb_c| = 2.13e-14` Ha (PASS)
-- **Process Peak RSS (up through `(16e,16o)` Mode A & B + `T2` + Observables):** `49.22 MB` (`< 50 MB` PASS)
+- **Process Peak RSS (up through `(16e,16o)` Mode A & B + `T2` + Observables):** `49.28 MB` (`< 64 MB` PASS)
 
 ## Acceptance Gate 2: Small & Mid-Small Active Spaces vs Exact Python/NumPy FCI
 | Benchmark | $(N, K)$ | Mode | $E_{\text{LB}}^{\text{cert}}$ (Ha) | $E_{\text{FCI}}$ (Ha) | $E_{\text{HF}}$ (Ha) | $|\Delta E_{\text{FCI}}|$ | Gap $E_{\text{FCI}} - E_{\text{LB}}$ (mHa) |
@@ -27,13 +27,13 @@
 ## Acceptance Gate 3: Beyond-FCI & Spin-State Ordering Certification
 | Benchmark | $(N, K)$ | Mode | $E_{\text{LB}}^{\text{cert}}$ (Ha) | $E_{\text{UB}}$ (Ha) | Width (mHa) | Iters | Time (s) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `n2_stretched_10e8o` | `(10e,8o)` | `A_SINGLET` | `-107.46164378` | `-107.44782295` | `13.821` | `600` | `1.43` |
-| `tm_spin_s0_8e8o` | `(8e,8o)` | `A_SINGLET` | `2.44359301` | `2.54914617` | `105.553` | `600` | `0.64` |
-| `tm_spin_s2_8e8o` | `(8e,8o)` | `B_GENERAL` | `1.10887550` | `1.10971428` | `0.839` | `600` | `0.97` |
-| `h12_chain_12e12o` | `(12e,12o)` | `A_SINGLET` | `-6.27900630` | `-6.17036243` | `108.644` | `500` | `2.18` |
-| `h12_chain_triplet_12e12o` | `(12e,12o)` | `B_GENERAL` | `-6.21975751` | `-6.07595954` | `143.798` | `500` | `4.59` |
-| `h16_chain_16e16o` | `(16e,16o)` | `A_SINGLET` | `-8.39822207` | `-8.14183326` | `256.389` | `400` | `5.59` |
-| `h16_chain_triplet_16e16o` | `(16e,16o)` | `B_GENERAL` | `-8.33929155` | `-7.99366154` | `345.630` | `400` | `20.48` |
+| `n2_stretched_10e8o` | `(10e,8o)` | `A_SINGLET` | `-107.46164378` | `-107.44782295` | `13.821` | `600` | `1.62` |
+| `tm_spin_s0_8e8o` | `(8e,8o)` | `A_SINGLET` | `2.44359301` | `2.54914617` | `105.553` | `600` | `0.81` |
+| `tm_spin_s2_8e8o` | `(8e,8o)` | `B_GENERAL` | `1.10887550` | `1.10971428` | `0.839` | `600` | `1.25` |
+| `h12_chain_12e12o` | `(12e,12o)` | `A_SINGLET` | `-6.27900630` | `-6.17036243` | `108.644` | `500` | `2.44` |
+| `h12_chain_triplet_12e12o` | `(12e,12o)` | `B_GENERAL` | `-6.21975751` | `-6.07595954` | `143.798` | `500` | `5.30` |
+| `h16_chain_16e16o` | `(16e,16o)` | `A_SINGLET` | `-8.39822207` | `-8.14183326` | `256.389` | `400` | `6.27` |
+| `h16_chain_triplet_16e16o` | `(16e,16o)` | `B_GENERAL` | `-8.33929155` | `-7.99366154` | `345.630` | `400` | `22.97` |
 
 - **Certified Transition-Metal Spin Gap (`tm_spin` `S=2` vs `S=0`):** `E_UB(S=2) = 1.109714 < E_LB(S=0) = 2.443593` (certified separation `+1333.88 mHa`, high-spin quintet ground state rigorously proved!).
 
@@ -50,10 +50,10 @@
 ### 5a. Matrix-Free `DQG` vs `DQG+T2` Subspace Lower-Bound Tightening
 | Benchmark | $(K_s/K)$ | $E_{\text{LB}}^{\text{DQG}}$ (Ha) | $E_{\text{LB}}^{\text{DQG}+T_2}$ (Ha) | Gain (mHa) | $E_{\text{UB}}$ (Ha) | Time (s) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `h4_ry2.2` | `(4/4)` | `-1.97936701` | `-1.97805713` | `+1.310` | `-1.97770201` | `0.44` |
-| `h2o_stretched` | `(4/6)` | `-74.82259272` | `-74.81860572` | `+3.987` | `-74.81434599` | `0.69` |
-| `n2_stretched_6e6o` | `(6/6)` | `-107.44458120` | `-107.43658445` | `+7.997` | `-107.43369288` | `4.11` |
-| `tm_spin_s0_8e8o` | `(4/8)` | `2.44359301` | `2.44794084` | `+4.348` | `2.54914617` | `1.50` |
+| `h4_ry2.2` | `(4/4)` | `-1.97936701` | `-1.97805713` | `+1.310` | `-1.97770201` | `0.56` |
+| `h2o_stretched` | `(4/6)` | `-74.82259272` | `-74.81860572` | `+3.987` | `-74.81434599` | `0.76` |
+| `n2_stretched_6e6o` | `(6/6)` | `-107.44458120` | `-107.43658445` | `+7.997` | `-107.43369288` | `4.63` |
+| `tm_spin_s0_8e8o` | `(4/8)` | `2.44359301` | `2.44794084` | `+4.348` | `2.54914617` | `1.70` |
 
 ### 5b. Certified Observable & Hellmann-Feynman Force Envelope Bounds (`O_LB <= <O>_FCI <= O_UB`)
 | Observable | Mode | $O_{\text{LB}}^{\text{cert}}$ | $\langle O \rangle_{\text{FCI}}$ | $O_{\text{UB}}^{\text{cert}}$ | Width | $|O_{\text{var}} - O_{\text{FCI}}|$ |

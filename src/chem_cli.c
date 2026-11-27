@@ -30,19 +30,21 @@ static void print_usage(void) {
             "                   [--t2] [--t2-orbs <Ks>] [--t1] [--t1-orbs <Ks>] [--auto-no]\n"
             "                   [--save-no-fcidump <no.fcidump>] [--threads <n>]\n"
             "                   [--witness <file.json>] [--dump-rdm-grad <grad.json>]\n"
-            "                   [--cert <cert.json>] [--cert-bin <cert.flowchem>] [--json <out.json>] [--verbose]\n"
+            "                   [--cert <cert.json>] [--cert-bin <cert.bin|cert.flowchem>] [--json <out.json>] [--verbose]\n"
             "  chem_cli veto <fcidump> --e-ai <Ha> [--veto-tol <Ha>] [--mode auto|a|b]\n"
             "                [--two-s <int>] [--no-s2] [--max-iters <int>] [--tol <double>]\n"
             "                [--max-dets <int>] [--t2] [--t2-orbs <Ks>] [--t1] [--t1-orbs <Ks>] [--auto-no]\n"
-            "                [--threads <n>] [--witness <file.json>] [--cert <cert.json>] [--cert-bin <cert.flowchem>] [--json <out.json>] [--verbose]\n"
+            "                [--threads <n>] [--witness <file.json>] [--cert <cert.json>] [--cert-bin <cert.bin|cert.flowchem>] [--json <out.json>] [--verbose]\n"
             "  chem_cli observable <fcidump> --type occ:<p>|docc:<p>|sdot:<p>:<q>|hf-force:<+>:<->:<dR>\n"
             "                      [--mode auto|a|b] [--two-s <int>] [--no-s2] [--max-iters <int>]\n"
             "                      [--tol <double>] [--max-dets <int>] [--t2] [--t2-orbs <Ks>]\n"
             "                      [--t1] [--t1-orbs <Ks>] [--auto-no] [--save-no-fcidump <no.fcidump>]\n"
             "                      [--threads <n>] [--witness <file.json>] [--json <out.json>] [--verbose]\n"
-            "  chem_cli cert-verify [<fcidump>] <cert.json|cert.flowchem>\n"
-            "  chem_cli exact-verify [<fcidump>] <cert.json|cert.flowchem> [--json <out.json>]\n"
-            "  chem_cli emit-lean <fcidump> <cert.json|cert.flowchem> --out <out.lean> [--name <ModName>]\n"
+            "  chem_cli cert-pack <in.cert.json> [<out.cert.bin>|--out <out.cert.bin>]\n"
+            "  chem_cli cert-unpack <in.cert.bin> [<out.cert.json>|--out <out.cert.json>]\n"
+            "  chem_cli cert-verify [<fcidump>] <cert.json|cert.bin|cert.flowchem>\n"
+            "  chem_cli exact-verify [<fcidump>] <cert.json|cert.bin|cert.flowchem> [--json <out.json>]\n"
+            "  chem_cli emit-lean <fcidump> <cert.json|cert.bin|cert.flowchem> --out <out.lean> [--name <ModName>]\n"
             "  chem_cli gpc <fcidump> [--mode auto|a|b] [--two-s <int>] [--witness <file.json>] [--certify-bd] [--json <out.json>]\n"
             "  chem_cli atlas [--dir <benchmarks_dir>] [--out <atlas.json>]\n"
             "  chem_cli bench --dir <benchmarks_dir> --out <bench.json> --cert-dir <certs_dir>\n");
@@ -571,14 +573,20 @@ static int cmd_selftest(int argc, char **argv) {
            sr4_veto.iter_stopped, sr4_a.iters,
            (double)sr4_a.iters / (double)(sr4_veto.iter_stopped > 0 ? sr4_veto.iter_stopped : 1));
 
-    /* 5. Certificate round-trip (JSON + binary .flowchem) + tamper rejection + witness load */
+    /* 5. Certificate round-trip (JSON + CHMC .cert.bin + binary .flowchem) + tamper rejection + witness load */
     const char *tmp_fci = "build/.selftest_h4.fcidump";
     const char *tmp_cert = "build/.selftest_h4.cert.json";
     const char *tmp_bin = "build/.selftest_h4.flowchem";
+    const char *tmp_chmc = "build/.selftest_h4.cert.bin";
+    const char *tmp_chmc_packed = "build/.selftest_h4_packed.cert.bin";
+    const char *tmp_chmc_unpacked = "build/.selftest_h4_unpacked.cert.json";
     if (chem_fcidump_write(tmp_fci, &h4, err, sizeof(err)) != 0) {
         tmp_fci = ".selftest_h4.fcidump";
         tmp_cert = ".selftest_h4.cert.json";
         tmp_bin = ".selftest_h4.flowchem";
+        tmp_chmc = ".selftest_h4.cert.bin";
+        tmp_chmc_packed = ".selftest_h4_packed.cert.bin";
+        tmp_chmc_unpacked = ".selftest_h4_unpacked.cert.json";
         if (chem_fcidump_write(tmp_fci, &h4, err, sizeof(err)) != 0) return 1;
     }
     ChemHam h4_reloaded;
@@ -591,11 +599,15 @@ static int cmd_selftest(int argc, char **argv) {
     if (chem_cert_write_json(tmp_cert, &h4_reloaded, tmp_fci, &sr4_r, &vr4, &sopts_a, err,
                              sizeof(err)) != 0 ||
         chem_cert_write_bin(tmp_bin, &h4_reloaded, tmp_fci, &sr4_r, &vr4, &sopts_a, err,
-                            sizeof(err)) != 0) {
-        fprintf(stderr, "FAIL write cert: %s\n", err);
+                            sizeof(err)) != 0 ||
+        chem_cert_write_chmc(tmp_chmc, &h4_reloaded, tmp_fci, &sr4_r, &vr4, &sopts_a, err,
+                             sizeof(err)) != 0 ||
+        chem_cert_pack(tmp_cert, tmp_chmc_packed, err, sizeof(err)) != 0 ||
+        chem_cert_unpack(tmp_chmc_packed, tmp_chmc_unpacked, err, sizeof(err)) != 0) {
+        fprintf(stderr, "FAIL write/pack/unpack cert: %s\n", err);
         return 1;
     }
-    ChemCertVerifyResult cvr, cvr_bin;
+    ChemCertVerifyResult cvr, cvr_bin, cvr_chmc, cvr_unpacked;
     if (chem_cert_verify_file(NULL, tmp_cert, &cvr) != 0 || !cvr.ok) {
         fprintf(stderr, "FAIL cert verify: %s\n", cvr.msg);
         return 1;
@@ -604,18 +616,60 @@ static int cmd_selftest(int argc, char **argv) {
         fprintf(stderr, "FAIL binary cert verify: %s\n", cvr_bin.msg);
         return 1;
     }
+    if (chem_cert_verify_file(NULL, tmp_chmc, &cvr_chmc) != 0 || !cvr_chmc.ok ||
+        !cvr_chmc.is_binary ||
+        chem_cert_verify_file(NULL, tmp_chmc_packed, &cvr_chmc) != 0 || !cvr_chmc.ok ||
+        chem_cert_verify_file(NULL, tmp_chmc_unpacked, &cvr_unpacked) != 0 || !cvr_unpacked.ok ||
+        cvr_unpacked.is_binary ||
+        fabs(cvr_chmc.E_lb_recomputed - cvr.E_lb_recomputed) > 0.0) {
+        fprintf(stderr, "FAIL CHMC verify/roundtrip: %s\n", cvr_chmc.msg);
+        return 1;
+    }
 
-    ChemExactVerifyResult ev_json, ev_bin;
+    ChemExactVerifyResult ev_json, ev_bin, ev_chmc;
     if (chem_cert_verify_exact_chol(NULL, tmp_cert, &ev_json) != 0 || !ev_json.ok ||
         !ev_json.all_blocks_sdd || fabs(ev_json.E_lb_int_chol - sr4_a.E_lb_cert) >= 2e-3 ||
         ev_json.E_lb_int_chol > vr4.E_ub + 1e-9 ||
         chem_cert_verify_exact_chol(NULL, tmp_bin, &ev_bin) != 0 || !ev_bin.ok ||
-        !ev_bin.all_blocks_sdd || fabs(ev_bin.E_lb_int_chol - sr4_a.E_lb_cert) >= 2e-3) {
-        fprintf(stderr, "FAIL exact Cholesky+SDD verify: %s / %s\n", ev_json.msg, ev_bin.msg);
+        !ev_bin.all_blocks_sdd || fabs(ev_bin.E_lb_int_chol - sr4_a.E_lb_cert) >= 2e-3 ||
+        chem_cert_verify_exact_chol(NULL, tmp_chmc, &ev_chmc) != 0 || !ev_chmc.ok ||
+        !ev_chmc.all_blocks_sdd || fabs(ev_chmc.E_lb_int_chol - ev_json.E_lb_int_chol) > 0.0) {
+        fprintf(stderr, "FAIL exact Cholesky+SDD verify: %s / %s / %s\n",
+                ev_json.msg, ev_bin.msg, ev_chmc.msg);
         return 1;
     }
-    printf("  [PASS] Zero-FP-Trust Cholesky+SDD (JSON & .flowchem): diff=%.2e Ha\n",
+    printf("  [PASS] Zero-FP-Trust Cholesky+SDD (JSON, CHMC .cert.bin, & .flowchem): diff=%.2e Ha\n",
            fabs(ev_json.E_lb_int_chol - sr4_a.E_lb_cert));
+
+    /* Verify byte-exact JSON <-> CHMC roundtrip */
+    {
+        FILE *f_a = fopen(tmp_cert, "rb");
+        FILE *f_b = fopen(tmp_chmc_unpacked, "rb");
+        if (!f_a || !f_b) {
+            if (f_a) fclose(f_a);
+            if (f_b) fclose(f_b);
+            fprintf(stderr, "FAIL open roundtrip JSON comparison\n");
+            return 1;
+        }
+        fseek(f_a, 0, SEEK_END); fseek(f_b, 0, SEEK_END);
+        long sza = ftell(f_a), szb = ftell(f_b);
+        fseek(f_a, 0, SEEK_SET); fseek(f_b, 0, SEEK_SET);
+        if (sza <= 0 || sza != szb) {
+            fclose(f_a); fclose(f_b);
+            fprintf(stderr, "FAIL CHMC roundtrip JSON size mismatch: %ld vs %ld\n", sza, szb);
+            return 1;
+        }
+        char *ba = (char *)malloc((size_t)sza);
+        char *bb = (char *)malloc((size_t)szb);
+        if (!ba || !bb || fread(ba, 1, (size_t)sza, f_a) != (size_t)sza ||
+            fread(bb, 1, (size_t)szb, f_b) != (size_t)szb ||
+            memcmp(ba, bb, (size_t)sza) != 0) {
+            free(ba); free(bb); fclose(f_a); fclose(f_b);
+            fprintf(stderr, "FAIL CHMC roundtrip JSON byte mismatch!\n");
+            return 1;
+        }
+        free(ba); free(bb); fclose(f_a); fclose(f_b);
+    }
 
     /* External witness ingestion test reading variational witness from tmp_cert */
     ChemVarResult vr_ext;
@@ -626,7 +680,7 @@ static int cmd_selftest(int argc, char **argv) {
     }
     chem_var_result_free(&vr_ext);
 
-    /* Tamper test: corrupt E_lb_cert slightly in JSON + flip byte in binary cert */
+    /* Tamper test: corrupt E_lb_cert slightly in JSON + flip byte in binary .flowchem & CHMC */
     FILE *fp_r = fopen(tmp_cert, "rb");
     if (!fp_r || fseek(fp_r, 0, SEEK_END) != 0) {
         if (fp_r) fclose(fp_r);
@@ -668,16 +722,39 @@ static int cmd_selftest(int argc, char **argv) {
         fclose(bf_r);
     }
 
-    ChemCertVerifyResult cvr_tamper, cvr_bin_tamper;
+    /* Flip a payload byte in tmp_chmc and a trailer byte in tmp_chmc_packed */
+    FILE *cf_r = fopen(tmp_chmc, "r+b");
+    if (cf_r) {
+        fseek(cf_r, 60, SEEK_SET);
+        int cch = fgetc(cf_r);
+        fseek(cf_r, -1, SEEK_CUR);
+        fputc(cch ^ 0x01, cf_r);
+        fclose(cf_r);
+    }
+    FILE *cf_t = fopen(tmp_chmc_packed, "r+b");
+    if (cf_t) {
+        fseek(cf_t, -4, SEEK_END);
+        int tch = fgetc(cf_t);
+        fseek(cf_t, -1, SEEK_CUR);
+        fputc(tch ^ 0x80, cf_t);
+        fclose(cf_t);
+    }
+
+    ChemCertVerifyResult cvr_tamper, cvr_bin_tamper, cvr_chmc_tamper, cvr_tr_tamper;
     if (chem_cert_verify_file(NULL, tmp_cert, &cvr_tamper) == 0 || cvr_tamper.ok ||
-        chem_cert_verify_file(NULL, tmp_bin, &cvr_bin_tamper) == 0 || cvr_bin_tamper.ok) {
+        chem_cert_verify_file(NULL, tmp_bin, &cvr_bin_tamper) == 0 || cvr_bin_tamper.ok ||
+        chem_cert_verify_file(NULL, tmp_chmc, &cvr_chmc_tamper) == 0 || cvr_chmc_tamper.ok ||
+        chem_cert_verify_file(NULL, tmp_chmc_packed, &cvr_tr_tamper) == 0 || cvr_tr_tamper.ok) {
         fprintf(stderr, "FAIL tamper test: corrupted certificate unexpectedly passed!\n");
         return 1;
     }
     remove(tmp_fci);
     remove(tmp_cert);
     remove(tmp_bin);
-    printf("  [PASS] Certificate JSON + Binary .flowchem + External Witness & Tamper Rejection\n");
+    remove(tmp_chmc);
+    remove(tmp_chmc_packed);
+    remove(tmp_chmc_unpacked);
+    printf("  [PASS] Certificate JSON + CHMC (.cert.bin) + .flowchem Roundtrip & Tamper Rejection\n");
 
     /* 5b. DQG+T2, DQG+T1, DQG+T1+T2 tightening, primal grad, & Triplet T1 FCI PSD */
     ChemSolveOpts sopts_t2 = sopts_a;
@@ -759,6 +836,35 @@ static int cmd_selftest(int argc, char **argv) {
         fprintf(stderr, "FAIL H4 triplet DQG+T1+T2: LB=%.8f FCI=%.8f\n",
                 sr4t_t12.E_lb_cert, vr4t.E_ci);
         return 1;
+    }
+    /* CHMC (.cert.bin) T1+T2 roundtrip & verification */
+    {
+        const char *t12_fci = "build/.selftest_t12.fcidump";
+        const char *t12_json = "build/.selftest_t12.cert.json";
+        const char *t12_bin = "build/.selftest_t12.cert.bin";
+        const char *t12_unp = "build/.selftest_t12_unp.cert.json";
+        if (chem_fcidump_write(t12_fci, &h4t, err, sizeof(err)) != 0) {
+            t12_fci = ".selftest_t12.fcidump";
+            t12_json = ".selftest_t12.cert.json";
+            t12_bin = ".selftest_t12.cert.bin";
+            t12_unp = ".selftest_t12_unp.cert.json";
+            if (chem_fcidump_write(t12_fci, &h4t, err, sizeof(err)) != 0) return 1;
+        }
+        ChemCertVerifyResult cv_t12;
+        ChemExactVerifyResult ev_t12;
+        if (chem_cert_write_json(t12_json, &h4t, t12_fci, &sr4t_t12, &vr4t, &sopts_t12, err,
+                                 sizeof(err)) != 0 ||
+            chem_cert_write_chmc(t12_bin, &h4t, t12_fci, &sr4t_t12, &vr4t, &sopts_t12, err,
+                                 sizeof(err)) != 0 ||
+            chem_cert_verify_file(NULL, t12_bin, &cv_t12) != 0 || !cv_t12.ok ||
+            !cv_t12.is_binary ||
+            chem_cert_verify_exact_chol(NULL, t12_bin, &ev_t12) != 0 || !ev_t12.ok ||
+            chem_cert_unpack(t12_bin, t12_unp, err, sizeof(err)) != 0 ||
+            chem_cert_verify_file(NULL, t12_unp, &cv_t12) != 0 || !cv_t12.ok) {
+            fprintf(stderr, "FAIL CHMC T1+T2 cert verify/unpack: %s\n", err);
+            return 1;
+        }
+        remove(t12_fci); remove(t12_json); remove(t12_bin); remove(t12_unp);
     }
     printf("  [PASS] H4 Tightening & T1: DQG=%.6f T1=%.6f T2=%.6f <= FCI=%.6f | Triplet T1+T2=%.6f <= FCI=%.6f (t1_eig=%.2e grad_dE=%.2e)\n",
            sr4_a.E_lb_cert, sr4_t1.E_lb_cert, sr4_t2.E_lb_cert, vr4.E_ci,
@@ -1361,8 +1467,64 @@ static int cmd_observable(int argc, char **argv) {
 }
 
 /* ============================================================================
- * Subcommand: cert-verify
+ * Subcommands: cert-pack, cert-unpack, cert-verify
  * ============================================================================ */
+
+static int cmd_cert_pack(int argc, char **argv) {
+    const char *in_json = NULL;
+    const char *out_bin = NULL;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
+            out_bin = argv[++i];
+        } else if (!in_json) {
+            in_json = argv[i];
+        } else if (!out_bin) {
+            out_bin = argv[i];
+        } else {
+            print_usage();
+            return 1;
+        }
+    }
+    if (!in_json || !out_bin) {
+        print_usage();
+        return 1;
+    }
+    char err[256] = {0};
+    if (chem_cert_pack(in_json, out_bin, err, sizeof(err)) != 0) {
+        fprintf(stderr, "ERROR cert-pack: %s\n", err);
+        return 1;
+    }
+    printf("Packed CHMC -> %s\n", out_bin);
+    return 0;
+}
+
+static int cmd_cert_unpack(int argc, char **argv) {
+    const char *in_bin = NULL;
+    const char *out_json = NULL;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
+            out_json = argv[++i];
+        } else if (!in_bin) {
+            in_bin = argv[i];
+        } else if (!out_json) {
+            out_json = argv[i];
+        } else {
+            print_usage();
+            return 1;
+        }
+    }
+    if (!in_bin || !out_json) {
+        print_usage();
+        return 1;
+    }
+    char err[256] = {0};
+    if (chem_cert_unpack(in_bin, out_json, err, sizeof(err)) != 0) {
+        fprintf(stderr, "ERROR cert-unpack: %s\n", err);
+        return 1;
+    }
+    printf("Unpacked CHMC -> %s\n", out_json);
+    return 0;
+}
 
 static int cmd_cert_verify(int argc, char **argv) {
     const char *fcidump_override = NULL;
@@ -1733,6 +1895,18 @@ static int cmd_bench(int argc, char **argv) {
             fclose(jf);
             return 1;
         }
+        {
+            char cbpath[1024];
+            snprintf(cbpath, sizeof(cbpath), "%s/%s.cert.bin", cert_dir, CASES[i].name);
+            if (chem_cert_write_chmc(cbpath, &ham, fpath, &sr, &vr, &sopts, err, sizeof(err)) != 0) {
+                fprintf(stderr, "ERROR writing %s: %s\n", cbpath, err);
+                chem_solve_result_free(&sr);
+                chem_var_result_free(&vr);
+                chem_ham_free(&ham);
+                fclose(jf);
+                return 1;
+            }
+        }
         if (CASES[i].write_bin) {
             char bpath[1024];
             snprintf(bpath, sizeof(bpath), "%s/%s.flowchem", cert_dir, CASES[i].name);
@@ -1758,9 +1932,11 @@ static int cmd_bench(int argc, char **argv) {
             vsopts.check_cert_every = 5;
             if (chem_solve_dqg(&ham, &vsopts, &sr_veto, err, sizeof(err)) == 0) {
                 has_veto = 1;
-                char vcpath[1024];
+                char vcpath[1024], vcbpath[1024];
                 snprintf(vcpath, sizeof(vcpath), "%s/%s.veto.cert.json", cert_dir, CASES[i].name);
+                snprintf(vcbpath, sizeof(vcbpath), "%s/%s.veto.cert.bin", cert_dir, CASES[i].name);
                 chem_cert_write_json(vcpath, &ham, fpath, &sr_veto, &vr, &vsopts, err, sizeof(err));
+                chem_cert_write_chmc(vcbpath, &ham, fpath, &sr_veto, &vr, &vsopts, err, sizeof(err));
             }
         }
 
@@ -1829,6 +2005,13 @@ static int cmd_bench(int argc, char **argv) {
         if (chem_cert_write_json(cpath, &ham, fpath, &sr, &vr, &sopts, err, sizeof(err)) != 0 ||
             chem_cert_write_bin(bpath, &ham, fpath, &sr, &vr, &sopts, err, sizeof(err)) != 0) {
             chem_solve_result_free(&sr); chem_var_result_free(&vr); chem_ham_free(&ham); fclose(jf); return 1;
+        }
+        {
+            char cbpath[1024];
+            snprintf(cbpath, sizeof(cbpath), "%s/%s.t2.cert.bin", cert_dir, T2_CASES[i].name);
+            if (chem_cert_write_chmc(cbpath, &ham, fpath, &sr, &vr, &sopts, err, sizeof(err)) != 0) {
+                chem_solve_result_free(&sr); chem_var_result_free(&vr); chem_ham_free(&ham); fclose(jf); return 1;
+            }
         }
         printf("  %-26s | Ks=%d/%d | LB_T2=%13.8f <= UB=%13.8f | gap=%7.3f mHa | it=%3d | %.2fs\n",
                T2_CASES[i].name, sr.t2_norbs, ham.K, sr.E_lb_cert, vr.E_ub,
@@ -2181,6 +2364,8 @@ int main(int argc, char **argv) {
     if (strcmp(argv[1], "bracket") == 0) return cmd_bracket_or_veto(0, argc, argv);
     if (strcmp(argv[1], "veto") == 0) return cmd_bracket_or_veto(1, argc, argv);
     if (strcmp(argv[1], "observable") == 0) return cmd_observable(argc, argv);
+    if (strcmp(argv[1], "cert-pack") == 0) return cmd_cert_pack(argc, argv);
+    if (strcmp(argv[1], "cert-unpack") == 0) return cmd_cert_unpack(argc, argv);
     if (strcmp(argv[1], "cert-verify") == 0) return cmd_cert_verify(argc, argv);
     if (strcmp(argv[1], "exact-verify") == 0) return cmd_exact_verify(argc, argv);
     if (strcmp(argv[1], "emit-lean") == 0) return cmd_emit_lean(argc, argv);

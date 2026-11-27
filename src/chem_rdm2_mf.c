@@ -4,6 +4,8 @@
 #include "chem_rdm2.h"
 #include "chem_shci.h"
 #include "flow.h"
+#include "flow_sha256.h"
+#include "flow_wire_pack.h"
 
 #include <ctype.h>
 #include <float.h>
@@ -5754,6 +5756,273 @@ static void write_json_array_i32(FILE *fp, const int *arr, int n) {
     fputc(']', fp);
 }
 
+typedef struct {
+    int schema_ver; /* 1, 2, or 3 */
+    char fcidump_path[4098];
+    char sha256_hex[65];
+    int K, nelec, ms2, na, nb, two_s, constrain_s2;
+    int t2_enabled, t2_norbs;
+    int t2_orbs[CHEM_MAX_ORBITALS];
+    int t1_enabled, t1_norbs;
+    int t1_orbs[CHEM_MAX_ORBITALS];
+    ChemMode mode;
+    double E_core;
+
+    /* solver */
+    int iters, converged, vetoed, iter_stopped;
+    double E_primal, E_dual_raw, E_lb_cert;
+    double min_eig_fp, min_eig_cert, delta_round, prim_res, dual_res, elapsed_sec;
+
+    /* veto */
+    int veto_enabled;
+    double E_ai, veto_tol, E_ub_variational, interval_width;
+
+    /* lean_scaled_witness */
+    int64_t scale_nha, E_lb_floor, E_ub_ceil, E_ai_minus_tol_floor;
+
+    /* variational */
+    int has_var_meta;
+    double E_hf0, E_scf, E_searu_rot, E_ci, E_ub;
+    int is_exact_fci;
+    uint64_t ndet_space;
+    int ndet_var, has_witness;
+    uint64_t *dets;
+    double *psi0;
+
+    /* dual_witness */
+    int meq, nD, nQ, nG, nT2, nT1;
+    double *y_eq, *Z_Q, *Z_G, *Z_T2, *Z_T1;
+    int owns_arrays;
+} ChemFullCert;
+
+static void full_cert_free(ChemFullCert *c) {
+    if (!c) return;
+    if (c->owns_arrays) {
+        free(c->dets);
+        free(c->psi0);
+        free(c->y_eq);
+        free(c->Z_Q);
+        free(c->Z_G);
+        free(c->Z_T2);
+        free(c->Z_T1);
+    }
+    memset(c, 0, sizeof(*c));
+}
+
+static void full_cert_from_solve(ChemFullCert *c, const ChemHam *ham, const char *fcidump_path,
+                                 const ChemSolveResult *res, const struct ChemVarResult *var_opt,
+                                 const ChemSolveOpts *opts_in) {
+    memset(c, 0, sizeof(*c));
+    ChemSolveOpts opts = opts_in ? *opts_in : chem_solve_opts_default(ham);
+    c->schema_ver = res->witness.t1_enabled ? 3 : (res->witness.t2_enabled ? 2 : 1);
+    snprintf(c->fcidump_path, sizeof(c->fcidump_path), "%s", fcidump_path ? fcidump_path : "");
+    memcpy(c->sha256_hex, ham->sha256_hex, 65);
+    c->K = ham->K;
+    c->nelec = ham->nelec;
+    c->ms2 = ham->ms2;
+    c->na = ham->na;
+    c->nb = ham->nb;
+    c->two_s = res->witness.two_s;
+    c->constrain_s2 = res->witness.constrain_s2;
+    c->t2_enabled = res->witness.t2_enabled;
+    c->t2_norbs = res->witness.t2_norbs;
+    if (c->t2_norbs > 0 && c->t2_norbs <= CHEM_MAX_ORBITALS) {
+        memcpy(c->t2_orbs, res->witness.t2_orbs, (size_t)c->t2_norbs * sizeof(int));
+    }
+    c->t1_enabled = res->witness.t1_enabled;
+    c->t1_norbs = res->witness.t1_norbs;
+    if (c->t1_norbs > 0 && c->t1_norbs <= CHEM_MAX_ORBITALS) {
+        memcpy(c->t1_orbs, res->witness.t1_orbs, (size_t)c->t1_norbs * sizeof(int));
+    }
+    c->mode = res->mode_used;
+    c->E_core = ham->E_core;
+
+    c->iters = res->iters;
+    c->converged = res->converged;
+    c->vetoed = res->vetoed;
+    c->iter_stopped = res->iter_stopped;
+    c->E_primal = res->E_primal;
+    c->E_dual_raw = res->E_dual_raw;
+    c->E_lb_cert = res->E_lb_cert;
+    c->min_eig_fp = res->min_eig_fp;
+    c->min_eig_cert = res->min_eig_cert;
+    c->delta_round = res->delta_round;
+    c->prim_res = res->prim_res;
+    c->dual_res = res->dual_res;
+    c->elapsed_sec = res->elapsed_sec;
+
+    double e_ub_v = var_opt ? var_opt->E_ub : res->E_primal;
+    c->veto_enabled = opts.veto_enabled;
+    c->E_ai = opts.E_ai;
+    c->veto_tol = opts.veto_tol;
+    c->E_ub_variational = e_ub_v;
+    c->interval_width = e_ub_v - res->E_lb_cert;
+
+    c->scale_nha = 1000000000LL;
+    c->E_lb_floor = (int64_t)floor(res->E_lb_cert * 1e9);
+    c->E_ub_ceil = (int64_t)ceil(e_ub_v * 1e9);
+    c->E_ai_minus_tol_floor = (int64_t)floor((opts.E_ai - opts.veto_tol) * 1e9);
+
+    if (var_opt) {
+        int emit_w = (var_opt->ndet_var > 0 && var_opt->ndet_var <= 2048 && var_opt->dets &&
+                      var_opt->psi0)
+                         ? 1
+                         : 0;
+        c->has_var_meta = 1;
+        c->E_hf0 = var_opt->E_hf0;
+        c->E_scf = var_opt->E_scf;
+        c->E_searu_rot = var_opt->E_searu_rot;
+        c->E_ci = var_opt->E_ci;
+        c->E_ub = var_opt->E_ub;
+        c->is_exact_fci = var_opt->is_exact_fci;
+        c->ndet_space = var_opt->ndet_space;
+        c->ndet_var = var_opt->ndet_var;
+        c->has_witness = emit_w;
+        if (emit_w) {
+            c->dets = var_opt->dets;
+            c->psi0 = var_opt->psi0;
+        }
+    } else {
+        c->has_var_meta = 0;
+        c->has_witness = 0;
+        c->E_ub = e_ub_v;
+    }
+
+    c->meq = res->witness.meq;
+    c->nD = res->witness.nD;
+    c->nQ = res->witness.nQ;
+    c->nG = res->witness.nG;
+    c->nT2 = res->witness.nT2;
+    c->nT1 = res->witness.nT1;
+    c->y_eq = res->witness.y_eq;
+    c->Z_Q = res->witness.Z_Q;
+    c->Z_G = res->witness.Z_G;
+    c->Z_T2 = res->witness.Z_T2;
+    c->Z_T1 = res->witness.Z_T1;
+    c->owns_arrays = 0;
+}
+
+static void json_write_full_cert(FILE *fp, const ChemFullCert *c) {
+    const char *mode_str = (c->mode == CHEM_MODE_A_SINGLET) ? "A_SINGLET" : "B_GENERAL";
+    const char *schema = (c->schema_ver >= 3 || c->t1_enabled)
+                             ? "chem-cert-v3"
+                             : ((c->schema_ver == 2 || c->t2_enabled) ? "chem-cert-v2" : "chem-cert-v1");
+    fprintf(fp, "{\n");
+    fprintf(fp, "  \"schema_version\": \"%s\",\n", schema);
+    fprintf(fp, "  \"fcidump_path\": ");
+    write_json_escaped_str(fp, c->fcidump_path);
+    fprintf(fp, ",\n");
+    fprintf(fp, "  \"hamiltonian_sha256\": \"%s\",\n", c->sha256_hex);
+    fprintf(fp, "  \"K\": %d,\n", c->K);
+    fprintf(fp, "  \"nelec\": %d,\n", c->nelec);
+    fprintf(fp, "  \"ms2\": %d,\n", c->ms2);
+    fprintf(fp, "  \"na\": %d,\n", c->na);
+    fprintf(fp, "  \"nb\": %d,\n", c->nb);
+    fprintf(fp, "  \"two_s\": %d,\n", c->two_s);
+    fprintf(fp, "  \"constrain_s2\": %d,\n", c->constrain_s2);
+    fprintf(fp, "  \"t2_enabled\": %d,\n", c->t2_enabled);
+    fprintf(fp, "  \"t2_norbs\": %d,\n", c->t2_norbs);
+    fprintf(fp, "  \"t2_orbs\": ");
+    write_json_array_i32(fp, c->t2_orbs, c->t2_norbs);
+    fprintf(fp, ",\n");
+    if (c->t1_enabled) {
+        fprintf(fp, "  \"t1_enabled\": %d,\n", c->t1_enabled);
+        fprintf(fp, "  \"t1_norbs\": %d,\n", c->t1_norbs);
+        fprintf(fp, "  \"t1_orbs\": ");
+        write_json_array_i32(fp, c->t1_orbs, c->t1_norbs);
+        fprintf(fp, ",\n");
+    }
+    fprintf(fp, "  \"mode\": \"%s\",\n", mode_str);
+    fprintf(fp, "  \"E_core\": %.17g,\n", c->E_core);
+
+    fprintf(fp, "  \"solver\": {\n");
+    fprintf(fp, "    \"iters\": %d,\n", c->iters);
+    fprintf(fp, "    \"converged\": %d,\n", c->converged);
+    fprintf(fp, "    \"vetoed\": %d,\n", c->vetoed);
+    fprintf(fp, "    \"iter_stopped\": %d,\n", c->iter_stopped);
+    fprintf(fp, "    \"E_primal\": %.17g,\n", c->E_primal);
+    fprintf(fp, "    \"E_dual_raw\": %.17g,\n", c->E_dual_raw);
+    fprintf(fp, "    \"E_lb_cert\": %.17g,\n", c->E_lb_cert);
+    fprintf(fp, "    \"min_eig_fp\": %.17g,\n", c->min_eig_fp);
+    fprintf(fp, "    \"min_eig_cert\": %.17g,\n", c->min_eig_cert);
+    fprintf(fp, "    \"delta_round\": %.17g,\n", c->delta_round);
+    fprintf(fp, "    \"prim_res\": %.17g,\n", c->prim_res);
+    fprintf(fp, "    \"dual_res\": %.17g,\n", c->dual_res);
+    fprintf(fp, "    \"elapsed_sec\": %.6f\n", c->elapsed_sec);
+    fprintf(fp, "  },\n");
+
+    fprintf(fp, "  \"veto\": {\n");
+    fprintf(fp, "    \"enabled\": %d,\n", c->veto_enabled);
+    fprintf(fp, "    \"E_ai\": %.17g,\n", c->E_ai);
+    fprintf(fp, "    \"veto_tol\": %.17g,\n", c->veto_tol);
+    fprintf(fp, "    \"vetoed\": %d,\n", c->vetoed);
+    fprintf(fp, "    \"iter_stopped\": %d,\n", c->iter_stopped);
+    fprintf(fp, "    \"E_ub_variational\": %.17g,\n", c->E_ub_variational);
+    fprintf(fp, "    \"interval_width\": %.17g\n", c->interval_width);
+    fprintf(fp, "  },\n");
+
+    fprintf(fp, "  \"lean_scaled_witness\": {\n");
+    fprintf(fp, "    \"scale_nha\": %lld,\n", (long long)c->scale_nha);
+    fprintf(fp, "    \"E_lb_floor\": %lld,\n", (long long)c->E_lb_floor);
+    fprintf(fp, "    \"E_ub_ceil\": %lld,\n", (long long)c->E_ub_ceil);
+    fprintf(fp, "    \"E_ai_minus_tol_floor\": %lld\n", (long long)c->E_ai_minus_tol_floor);
+    fprintf(fp, "  },\n");
+
+    fprintf(fp, "  \"variational\": {\n");
+    if (c->has_var_meta) {
+        fprintf(fp, "    \"E_hf0\": %.17g,\n", c->E_hf0);
+        fprintf(fp, "    \"E_scf\": %.17g,\n", c->E_scf);
+        fprintf(fp, "    \"E_searu_rot\": %.17g,\n", c->E_searu_rot);
+        fprintf(fp, "    \"E_ci\": %.17g,\n", c->E_ci);
+        fprintf(fp, "    \"E_ub\": %.17g,\n", c->E_ub);
+        fprintf(fp, "    \"is_exact_fci\": %d,\n", c->is_exact_fci);
+        fprintf(fp, "    \"ndet_space\": %llu,\n", (unsigned long long)c->ndet_space);
+        fprintf(fp, "    \"ndet_var\": %d,\n", c->ndet_var);
+        fprintf(fp, "    \"has_witness\": %d", c->has_witness);
+        if (c->has_witness && c->ndet_var > 0 && c->dets && c->psi0) {
+            fprintf(fp, ",\n    \"dets\": [");
+            for (int i = 0; i < c->ndet_var; i++) {
+                if (i > 0) fputc(',', fp);
+                fprintf(fp, "\"0x%016llx\"", (unsigned long long)c->dets[i]);
+            }
+            fprintf(fp, "],\n    \"psi0\": ");
+            write_json_array_f64(fp, c->psi0, c->ndet_var);
+            fputc('\n', fp);
+        } else {
+            fputc('\n', fp);
+        }
+    } else {
+        fprintf(fp, "    \"has_witness\": 0,\n");
+        fprintf(fp, "    \"E_ub\": %.17g\n", c->E_ub);
+    }
+    fprintf(fp, "  },\n");
+
+    fprintf(fp, "  \"dual_witness\": {\n");
+    fprintf(fp, "    \"meq\": %d,\n", c->meq);
+    fprintf(fp, "    \"nD\": %d,\n", c->nD);
+    fprintf(fp, "    \"nQ\": %d,\n", c->nQ);
+    fprintf(fp, "    \"nG\": %d,\n", c->nG);
+    fprintf(fp, "    \"nT2\": %d,\n", c->nT2);
+    if (c->t1_enabled) {
+        fprintf(fp, "    \"nT1\": %d,\n", c->nT1);
+    }
+    fprintf(fp, "    \"y_eq\": ");
+    write_json_array_f64(fp, c->y_eq, c->meq);
+    fprintf(fp, ",\n    \"Z_Q\": ");
+    write_json_array_f64(fp, c->Z_Q, c->nQ);
+    fprintf(fp, ",\n    \"Z_G\": ");
+    write_json_array_f64(fp, c->Z_G, c->nG);
+    if (c->t2_enabled && c->nT2 > 0 && c->Z_T2) {
+        fprintf(fp, ",\n    \"Z_T2\": ");
+        write_json_array_f64(fp, c->Z_T2, c->nT2);
+    }
+    if (c->t1_enabled && c->nT1 > 0 && c->Z_T1) {
+        fprintf(fp, ",\n    \"Z_T1\": ");
+        write_json_array_f64(fp, c->Z_T1, c->nT1);
+    }
+    fprintf(fp, "\n  }\n}\n");
+}
+
 int chem_cert_write_json(const char *path, const ChemHam *ham, const char *fcidump_path,
                          const ChemSolveResult *res, const struct ChemVarResult *var_opt,
                          const ChemSolveOpts *opts_in, char *err, size_t err_sz) {
@@ -5766,136 +6035,14 @@ int chem_cert_write_json(const char *path, const ChemHam *ham, const char *fcidu
         set_err(err, err_sz, "cannot open certificate output path: %s", path);
         return -1;
     }
-
-    ChemSolveOpts opts = opts_in ? *opts_in : chem_solve_opts_default(ham);
-    const char *mode_str = (res->mode_used == CHEM_MODE_A_SINGLET) ? "A_SINGLET" : "B_GENERAL";
-
-    const char *schema = res->witness.t1_enabled
-                             ? "chem-cert-v3"
-                             : (res->witness.t2_enabled ? "chem-cert-v2" : "chem-cert-v1");
-    fprintf(fp, "{\n");
-    fprintf(fp, "  \"schema_version\": \"%s\",\n", schema);
-    fprintf(fp, "  \"fcidump_path\": ");
-    write_json_escaped_str(fp, fcidump_path ? fcidump_path : "");
-    fprintf(fp, ",\n");
-    fprintf(fp, "  \"hamiltonian_sha256\": \"%s\",\n", ham->sha256_hex);
-    fprintf(fp, "  \"K\": %d,\n", ham->K);
-    fprintf(fp, "  \"nelec\": %d,\n", ham->nelec);
-    fprintf(fp, "  \"ms2\": %d,\n", ham->ms2);
-    fprintf(fp, "  \"na\": %d,\n", ham->na);
-    fprintf(fp, "  \"nb\": %d,\n", ham->nb);
-    fprintf(fp, "  \"two_s\": %d,\n", res->witness.two_s);
-    fprintf(fp, "  \"constrain_s2\": %d,\n", res->witness.constrain_s2);
-    fprintf(fp, "  \"t2_enabled\": %d,\n", res->witness.t2_enabled);
-    fprintf(fp, "  \"t2_norbs\": %d,\n", res->witness.t2_norbs);
-    fprintf(fp, "  \"t2_orbs\": ");
-    write_json_array_i32(fp, res->witness.t2_orbs, res->witness.t2_norbs);
-    fprintf(fp, ",\n");
-    if (res->witness.t1_enabled) {
-        fprintf(fp, "  \"t1_enabled\": %d,\n", res->witness.t1_enabled);
-        fprintf(fp, "  \"t1_norbs\": %d,\n", res->witness.t1_norbs);
-        fprintf(fp, "  \"t1_orbs\": ");
-        write_json_array_i32(fp, res->witness.t1_orbs, res->witness.t1_norbs);
-        fprintf(fp, ",\n");
+    ChemFullCert fc;
+    full_cert_from_solve(&fc, ham, fcidump_path, res, var_opt, opts_in);
+    json_write_full_cert(fp, &fc);
+    if (ferror(fp)) {
+        fclose(fp);
+        set_err(err, err_sz, "write error on certificate output path: %s", path);
+        return -1;
     }
-    fprintf(fp, "  \"mode\": \"%s\",\n", mode_str);
-    fprintf(fp, "  \"E_core\": %.17g,\n", ham->E_core);
-
-    fprintf(fp, "  \"solver\": {\n");
-    fprintf(fp, "    \"iters\": %d,\n", res->iters);
-    fprintf(fp, "    \"converged\": %d,\n", res->converged);
-    fprintf(fp, "    \"vetoed\": %d,\n", res->vetoed);
-    fprintf(fp, "    \"iter_stopped\": %d,\n", res->iter_stopped);
-    fprintf(fp, "    \"E_primal\": %.17g,\n", res->E_primal);
-    fprintf(fp, "    \"E_dual_raw\": %.17g,\n", res->E_dual_raw);
-    fprintf(fp, "    \"E_lb_cert\": %.17g,\n", res->E_lb_cert);
-    fprintf(fp, "    \"min_eig_fp\": %.17g,\n", res->min_eig_fp);
-    fprintf(fp, "    \"min_eig_cert\": %.17g,\n", res->min_eig_cert);
-    fprintf(fp, "    \"delta_round\": %.17g,\n", res->delta_round);
-    fprintf(fp, "    \"prim_res\": %.17g,\n", res->prim_res);
-    fprintf(fp, "    \"dual_res\": %.17g,\n", res->dual_res);
-    fprintf(fp, "    \"elapsed_sec\": %.6f\n", res->elapsed_sec);
-    fprintf(fp, "  },\n");
-
-    double e_ub_v = var_opt ? var_opt->E_ub : res->E_primal;
-    fprintf(fp, "  \"veto\": {\n");
-    fprintf(fp, "    \"enabled\": %d,\n", opts.veto_enabled);
-    fprintf(fp, "    \"E_ai\": %.17g,\n", opts.E_ai);
-    fprintf(fp, "    \"veto_tol\": %.17g,\n", opts.veto_tol);
-    fprintf(fp, "    \"vetoed\": %d,\n", res->vetoed);
-    fprintf(fp, "    \"iter_stopped\": %d,\n", res->iter_stopped);
-    fprintf(fp, "    \"E_ub_variational\": %.17g,\n", e_ub_v);
-    fprintf(fp, "    \"interval_width\": %.17g\n", e_ub_v - res->E_lb_cert);
-    fprintf(fp, "  },\n");
-
-    long long lb_scaled = (long long)floor(res->E_lb_cert * 1e9);
-    long long ub_scaled = (long long)ceil(e_ub_v * 1e9);
-    long long ai_scaled = (long long)floor((opts.E_ai - opts.veto_tol) * 1e9);
-    fprintf(fp, "  \"lean_scaled_witness\": {\n");
-    fprintf(fp, "    \"scale_nha\": 1000000000,\n");
-    fprintf(fp, "    \"E_lb_floor\": %lld,\n", lb_scaled);
-    fprintf(fp, "    \"E_ub_ceil\": %lld,\n", ub_scaled);
-    fprintf(fp, "    \"E_ai_minus_tol_floor\": %lld\n", ai_scaled);
-    fprintf(fp, "  },\n");
-
-    fprintf(fp, "  \"variational\": {\n");
-    if (var_opt) {
-        int emit_w = (var_opt->ndet_var > 0 && var_opt->ndet_var <= 2048 && var_opt->dets &&
-                      var_opt->psi0)
-                         ? 1
-                         : 0;
-        fprintf(fp, "    \"E_hf0\": %.17g,\n", var_opt->E_hf0);
-        fprintf(fp, "    \"E_scf\": %.17g,\n", var_opt->E_scf);
-        fprintf(fp, "    \"E_searu_rot\": %.17g,\n", var_opt->E_searu_rot);
-        fprintf(fp, "    \"E_ci\": %.17g,\n", var_opt->E_ci);
-        fprintf(fp, "    \"E_ub\": %.17g,\n", var_opt->E_ub);
-        fprintf(fp, "    \"is_exact_fci\": %d,\n", var_opt->is_exact_fci);
-        fprintf(fp, "    \"ndet_space\": %llu,\n", (unsigned long long)var_opt->ndet_space);
-        fprintf(fp, "    \"ndet_var\": %d,\n", var_opt->ndet_var);
-        fprintf(fp, "    \"has_witness\": %d", emit_w);
-        if (emit_w) {
-            fprintf(fp, ",\n    \"dets\": [");
-            for (int i = 0; i < var_opt->ndet_var; i++) {
-                if (i > 0) fputc(',', fp);
-                fprintf(fp, "\"0x%016llx\"", (unsigned long long)var_opt->dets[i]);
-            }
-            fprintf(fp, "],\n    \"psi0\": ");
-            write_json_array_f64(fp, var_opt->psi0, var_opt->ndet_var);
-            fputc('\n', fp);
-        } else {
-            fputc('\n', fp);
-        }
-    } else {
-        fprintf(fp, "    \"has_witness\": 0,\n");
-        fprintf(fp, "    \"E_ub\": %.17g\n", e_ub_v);
-    }
-    fprintf(fp, "  },\n");
-
-    fprintf(fp, "  \"dual_witness\": {\n");
-    fprintf(fp, "    \"meq\": %d,\n", res->witness.meq);
-    fprintf(fp, "    \"nD\": %d,\n", res->witness.nD);
-    fprintf(fp, "    \"nQ\": %d,\n", res->witness.nQ);
-    fprintf(fp, "    \"nG\": %d,\n", res->witness.nG);
-    fprintf(fp, "    \"nT2\": %d,\n", res->witness.nT2);
-    if (res->witness.t1_enabled) {
-        fprintf(fp, "    \"nT1\": %d,\n", res->witness.nT1);
-    }
-    fprintf(fp, "    \"y_eq\": ");
-    write_json_array_f64(fp, res->witness.y_eq, res->witness.meq);
-    fprintf(fp, ",\n    \"Z_Q\": ");
-    write_json_array_f64(fp, res->witness.Z_Q, res->witness.nQ);
-    fprintf(fp, ",\n    \"Z_G\": ");
-    write_json_array_f64(fp, res->witness.Z_G, res->witness.nG);
-    if (res->witness.t2_enabled && res->witness.nT2 > 0 && res->witness.Z_T2) {
-        fprintf(fp, ",\n    \"Z_T2\": ");
-        write_json_array_f64(fp, res->witness.Z_T2, res->witness.nT2);
-    }
-    if (res->witness.t1_enabled && res->witness.nT1 > 0 && res->witness.Z_T1) {
-        fprintf(fp, ",\n    \"Z_T1\": ");
-        write_json_array_f64(fp, res->witness.Z_T1, res->witness.nT1);
-    }
-    fprintf(fp, "\n  }\n}\n");
-
     fclose(fp);
     return 0;
 }
@@ -5914,15 +6061,26 @@ typedef struct {
     double E_lb_cert, E_ub, E_ci, E_ai, veto_tol;
 } ChemBinCertHeader;
 
+static int path_ends_with(const char *path, const char *suffix) {
+    if (!path || !suffix) return 0;
+    size_t lp = strlen(path);
+    size_t ls = strlen(suffix);
+    if (lp < ls) return 0;
+    return memcmp(path + (lp - ls), suffix, ls) == 0;
+}
+
 int chem_cert_write_bin(const char *path, const ChemHam *ham, const char *fcidump_path,
                         const ChemSolveResult *res, const struct ChemVarResult *var_opt,
                         const ChemSolveOpts *opts_in, char *err, size_t err_sz) {
+    if (path_ends_with(path, ".cert.bin")) {
+        return chem_cert_write_chmc(path, ham, fcidump_path, res, var_opt, opts_in, err, err_sz);
+    }
     if (!path || !ham || !res) {
         set_err(err, err_sz, "null argument to chem_cert_write_bin");
         return -1;
     }
     if (res->witness.t1_enabled) {
-        set_err(err, err_sz, "binary .flowchem format supports DQG/DQG+T2; use --cert JSON for T1");
+        set_err(err, err_sz, "binary .flowchem format supports DQG/DQG+T2; use --cert JSON or .cert.bin for T1");
         return -1;
     }
     FILE *fp = fopen(path, "wb");
@@ -6069,6 +6227,26 @@ static int json_get_int(const char *start, const char *end, const char *key, int
     return 0;
 }
 
+static int json_get_i64(const char *start, const char *end, const char *key, int64_t *out) {
+    const char *v = json_find_key_in_range(start, end, key);
+    if (!v) return -1;
+    char *ep = NULL;
+    long long val = strtoll(v, &ep, 10);
+    if (ep == v) return -1;
+    *out = (int64_t)val;
+    return 0;
+}
+
+static int json_get_u64(const char *start, const char *end, const char *key, uint64_t *out) {
+    const char *v = json_find_key_in_range(start, end, key);
+    if (!v) return -1;
+    char *ep = NULL;
+    unsigned long long val = strtoull(v, &ep, 10);
+    if (ep == v) return -1;
+    *out = (uint64_t)val;
+    return 0;
+}
+
 static int json_get_double(const char *start, const char *end, const char *key, double *out) {
     const char *v = json_find_key_in_range(start, end, key);
     if (!v) return -1;
@@ -6190,7 +6368,1203 @@ static int json_get_u64_hex_array(const char *start, const char *end, const char
 }
 
 /* ============================================================================
- * Shared Certificate Loader (.cert.json & .flowchem)
+ * Canonical Columnar Binary Certificate Codec ("CHMC" v1, .cert.bin)
+ * ============================================================================ */
+
+#define CHMC_MAGIC_0 'C'
+#define CHMC_MAGIC_1 'H'
+#define CHMC_MAGIC_2 'M'
+#define CHMC_MAGIC_3 'C'
+#define CHMC_VERSION UINT32_C(1)
+#define CHMC_HDR_BYTES 44U
+#define CHMC_TRAILER_BYTES 32U
+
+#define CHMC_FLAG_MODE_B       (UINT32_C(1) << 0)
+#define CHMC_FLAG_CONSTRAIN_S2 (UINT32_C(1) << 1)
+#define CHMC_FLAG_T2           (UINT32_C(1) << 2)
+#define CHMC_FLAG_T1           (UINT32_C(1) << 3)
+#define CHMC_FLAG_CONVERGED    (UINT32_C(1) << 4)
+#define CHMC_FLAG_VETO_EN      (UINT32_C(1) << 5)
+#define CHMC_FLAG_VETOED       (UINT32_C(1) << 6)
+#define CHMC_FLAG_HAS_VAR_META (UINT32_C(1) << 7)
+#define CHMC_FLAG_HAS_WITNESS  (UINT32_C(1) << 8)
+#define CHMC_FLAG_IS_EXACT_FCI (UINT32_C(1) << 9)
+#define CHMC_FLAGS_VALID_MASK  UINT32_C(0x3FF)
+
+#define CHMC_COL_ALL_ZERO    UINT8_C(0)
+#define CHMC_COL_SPARSE_MASK UINT8_C(1)
+#define CHMC_COL_DENSE       UINT8_C(2)
+
+#define CHMC_LANE_CONST UINT8_C(0)
+#define CHMC_LANE_PAL2  UINT8_C(1)
+#define CHMC_LANE_PAL4  UINT8_C(2)
+#define CHMC_LANE_RLE   UINT8_C(3)
+#define CHMC_LANE_RAW   UINT8_C(4)
+
+typedef struct {
+    uint8_t *data;
+    size_t len;
+    size_t cap;
+} ChemByteBuf;
+
+static int bb_reserve(ChemByteBuf *b, size_t extra) {
+    if (extra > SIZE_MAX - b->len) return -1;
+    size_t need = b->len + extra;
+    if (need <= b->cap) return 0;
+    size_t ncap = b->cap ? b->cap : 4096U;
+    while (ncap < need) {
+        if (ncap > SIZE_MAX / 2U) {
+            ncap = need;
+            break;
+        }
+        ncap *= 2U;
+    }
+    uint8_t *nd = (uint8_t *)realloc(b->data, ncap);
+    if (!nd) return -1;
+    b->data = nd;
+    b->cap = ncap;
+    return 0;
+}
+
+static int bb_put_u8(ChemByteBuf *b, uint8_t v) {
+    if (bb_reserve(b, 1U) != 0) return -1;
+    b->data[b->len++] = v;
+    return 0;
+}
+
+static int bb_put_bytes(ChemByteBuf *b, const void *src, size_t n) {
+    if (n == 0U) return 0;
+    if (bb_reserve(b, n) != 0) return -1;
+    memcpy(b->data + b->len, src, n);
+    b->len += n;
+    return 0;
+}
+
+static int bb_put_le32(ChemByteBuf *b, uint32_t v) {
+    if (bb_reserve(b, 4U) != 0) return -1;
+    flow_ir_wire_write_le32(b->data + b->len, v);
+    b->len += 4U;
+    return 0;
+}
+
+static int bb_put_le64(ChemByteBuf *b, uint64_t v) {
+    if (bb_reserve(b, 8U) != 0) return -1;
+    flow_ir_wire_write_le64(b->data + b->len, v);
+    b->len += 8U;
+    return 0;
+}
+
+static int bb_put_i32(ChemByteBuf *b, int32_t v) {
+    uint32_t u = 0U;
+    memcpy(&u, &v, sizeof(u));
+    return bb_put_le32(b, u);
+}
+
+static int bb_put_i64(ChemByteBuf *b, int64_t v) {
+    uint64_t u = 0U;
+    memcpy(&u, &v, sizeof(u));
+    return bb_put_le64(b, u);
+}
+
+static int bb_put_f64(ChemByteBuf *b, double x) {
+    uint64_t u = 0U;
+    memcpy(&u, &x, sizeof(u));
+    return bb_put_le64(b, u);
+}
+
+static int bb_put_varu64(ChemByteBuf *b, uint64_t v) {
+    if (bb_reserve(b, 10U) != 0) return -1;
+    return flow_wire_put_varu64(b->data, b->cap, &b->len, v) ? 0 : -1;
+}
+
+static int bb_put_varu32(ChemByteBuf *b, uint32_t v) {
+    return bb_put_varu64(b, (uint64_t)v);
+}
+
+static int chmc_get_u8(const uint8_t *buf, size_t end, size_t *pos, uint8_t *out) {
+    return flow_wire_get_u8(buf, end, pos, out) ? 0 : -1;
+}
+
+static int chmc_get_le32(const uint8_t *buf, size_t end, size_t *pos, uint32_t *out) {
+    if (*pos + 4U > end) return -1;
+    *out = flow_ir_wire_read_le32(buf + *pos);
+    *pos += 4U;
+    return 0;
+}
+
+static int chmc_get_le64(const uint8_t *buf, size_t end, size_t *pos, uint64_t *out) {
+    if (*pos + 8U > end) return -1;
+    *out = flow_ir_wire_read_le64(buf + *pos);
+    *pos += 8U;
+    return 0;
+}
+
+static int chmc_get_i32(const uint8_t *buf, size_t end, size_t *pos, int32_t *out) {
+    uint32_t u = 0U;
+    if (chmc_get_le32(buf, end, pos, &u) != 0) return -1;
+    memcpy(out, &u, sizeof(*out));
+    return 0;
+}
+
+static int chmc_get_i64(const uint8_t *buf, size_t end, size_t *pos, int64_t *out) {
+    uint64_t u = 0U;
+    if (chmc_get_le64(buf, end, pos, &u) != 0) return -1;
+    memcpy(out, &u, sizeof(*out));
+    return 0;
+}
+
+static int chmc_get_f64(const uint8_t *buf, size_t end, size_t *pos, double *out) {
+    uint64_t u = 0U;
+    if (chmc_get_le64(buf, end, pos, &u) != 0) return -1;
+    memcpy(out, &u, sizeof(*out));
+    return 0;
+}
+
+static int chmc_get_varu64(const uint8_t *buf, size_t end, size_t *pos, uint64_t *out) {
+    return flow_wire_get_varu64(buf, end, pos, out) ? 0 : -1;
+}
+
+static int chmc_get_varu32(const uint8_t *buf, size_t end, size_t *pos, uint32_t *out) {
+    return flow_wire_get_varu32(buf, end, pos, out) ? 0 : -1;
+}
+
+static int hex_to_bytes32(const char *hex, uint8_t out[32]) {
+    if (!hex || strlen(hex) != 64U) return -1;
+    for (size_t i = 0U; i < 32U; i++) {
+        uint8_t nib[2];
+        for (size_t k = 0U; k < 2U; k++) {
+            char ch = hex[2U * i + k];
+            if (ch >= '0' && ch <= '9') nib[k] = (uint8_t)(ch - '0');
+            else if (ch >= 'a' && ch <= 'f') nib[k] = (uint8_t)(10 + (ch - 'a'));
+            else if (ch >= 'A' && ch <= 'F') nib[k] = (uint8_t)(10 + (ch - 'A'));
+            else return -1;
+        }
+        out[i] = (uint8_t)((nib[0] << 4U) | nib[1]);
+    }
+    return 0;
+}
+
+static size_t chmc_packbits_measure(const uint8_t *plane, size_t m) {
+    size_t out_len = 0U;
+    size_t i = 0U;
+    while (i < m) {
+        size_t run = 1U;
+        while (i + run < m && run < 130U && plane[i + run] == plane[i]) run++;
+        if (run >= 3U) {
+            out_len += 2U;
+            i += run;
+        } else {
+            size_t lit = 0U;
+            while (i < m && lit < 128U) {
+                size_t r = 1U;
+                while (i + r < m && r < 3U && plane[i + r] == plane[i]) r++;
+                if (r >= 3U) break;
+                i++;
+                lit++;
+            }
+            out_len += 1U + lit;
+        }
+    }
+    return out_len;
+}
+
+static int chmc_packbits_emit(ChemByteBuf *bb, const uint8_t *plane, size_t m) {
+    size_t i = 0U;
+    while (i < m) {
+        size_t run = 1U;
+        while (i + run < m && run < 130U && plane[i + run] == plane[i]) run++;
+        if (run >= 3U) {
+            if (bb_put_u8(bb, (uint8_t)(128U + (run - 3U))) != 0 ||
+                bb_put_u8(bb, plane[i]) != 0) {
+                return -1;
+            }
+            i += run;
+        } else {
+            size_t lit_start = i;
+            size_t lit = 0U;
+            while (i < m && lit < 128U) {
+                size_t r = 1U;
+                while (i + r < m && r < 3U && plane[i + r] == plane[i]) r++;
+                if (r >= 3U) break;
+                i++;
+                lit++;
+            }
+            if (bb_put_u8(bb, (uint8_t)(lit - 1U)) != 0 ||
+                bb_put_bytes(bb, plane + lit_start, lit) != 0) {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int chmc_encode_lane(ChemByteBuf *bb, const uint8_t *plane, size_t m) {
+    uint8_t present[256] = {0};
+    for (size_t i = 0U; i < m; i++) present[plane[i]] = 1U;
+    uint8_t pal[256];
+    uint8_t b2idx[256] = {0};
+    size_t u = 0U;
+    for (size_t v = 0U; v < 256U; v++) {
+        if (present[v]) {
+            b2idx[v] = (uint8_t)u;
+            pal[u++] = (uint8_t)v;
+        }
+    }
+
+    uint8_t best_mode = CHMC_LANE_RAW;
+    size_t best_len = 1U + m;
+    if (u == 1U && 2U < best_len) {
+        best_mode = CHMC_LANE_CONST;
+        best_len = 2U;
+    }
+    if (u >= 2U && u <= 4U) {
+        size_t clen = 2U + u + ((m + 3U) >> 2U);
+        if (clen < best_len) {
+            best_mode = CHMC_LANE_PAL2;
+            best_len = clen;
+        }
+    }
+    if (u >= 5U && u <= 16U) {
+        size_t clen = 2U + u + ((m + 1U) >> 1U);
+        if (clen < best_len) {
+            best_mode = CHMC_LANE_PAL4;
+            best_len = clen;
+        }
+    }
+    size_t rle_len = chmc_packbits_measure(plane, m);
+    if (1U + rle_len < best_len) {
+        best_mode = CHMC_LANE_RLE;
+    }
+
+    if (bb_put_u8(bb, best_mode) != 0) return -1;
+    if (best_mode == CHMC_LANE_CONST) {
+        return bb_put_u8(bb, pal[0]);
+    }
+    if (best_mode == CHMC_LANE_PAL2) {
+        size_t pbytes = (m + 3U) >> 2U;
+        if (bb_put_u8(bb, (uint8_t)u) != 0 || bb_put_bytes(bb, pal, u) != 0 ||
+            bb_reserve(bb, pbytes) != 0) {
+            return -1;
+        }
+        uint8_t *dst = bb->data + bb->len;
+        memset(dst, 0, pbytes);
+        for (size_t i = 0U; i < m; i++) {
+            dst[i >> 2U] |= (uint8_t)(b2idx[plane[i]] << (2U * (i & 3U)));
+        }
+        bb->len += pbytes;
+        return 0;
+    }
+    if (best_mode == CHMC_LANE_PAL4) {
+        size_t pbytes = (m + 1U) >> 1U;
+        if (bb_put_u8(bb, (uint8_t)u) != 0 || bb_put_bytes(bb, pal, u) != 0 ||
+            bb_reserve(bb, pbytes) != 0) {
+            return -1;
+        }
+        uint8_t *dst = bb->data + bb->len;
+        memset(dst, 0, pbytes);
+        for (size_t i = 0U; i < m; i++) {
+            dst[i >> 1U] |= (uint8_t)(b2idx[plane[i]] << (4U * (i & 1U)));
+        }
+        bb->len += pbytes;
+        return 0;
+    }
+    if (best_mode == CHMC_LANE_RLE) {
+        return chmc_packbits_emit(bb, plane, m);
+    }
+    return bb_put_bytes(bb, plane, m);
+}
+
+static int chmc_decode_lane(const uint8_t *buf, size_t end, size_t *pos, uint8_t *plane,
+                            size_t m) {
+    uint8_t mode = 0U;
+    if (chmc_get_u8(buf, end, pos, &mode) != 0) return -1;
+    if (mode == CHMC_LANE_CONST) {
+        if (m < 2U) return -1;
+        uint8_t val = 0U;
+        if (chmc_get_u8(buf, end, pos, &val) != 0) return -1;
+        memset(plane, val, m);
+        return 0;
+    }
+    if (mode == CHMC_LANE_PAL2) {
+        uint8_t u = 0U;
+        if (chmc_get_u8(buf, end, pos, &u) != 0 || u < 2U || u > 4U) return -1;
+        size_t pbytes = (m + 3U) >> 2U;
+        if (2U + (size_t)u + pbytes >= 1U + m) return -1;
+        if (*pos + (size_t)u + pbytes > end) return -1;
+        const uint8_t *pal = buf + *pos;
+        for (uint8_t i = 1U; i < u; i++) {
+            if (pal[i - 1U] >= pal[i]) return -1;
+        }
+        *pos += (size_t)u;
+        const uint8_t *packed = buf + *pos;
+        *pos += pbytes;
+        if ((m & 3U) != 0U && (packed[pbytes - 1U] >> (2U * (m & 3U))) != 0U) return -1;
+        for (size_t i = 0U; i < m; i++) {
+            uint8_t idx = (uint8_t)((packed[i >> 2U] >> (2U * (i & 3U))) & 3U);
+            if (idx >= u) return -1;
+            plane[i] = pal[idx];
+        }
+        return 0;
+    }
+    if (mode == CHMC_LANE_PAL4) {
+        uint8_t u = 0U;
+        if (chmc_get_u8(buf, end, pos, &u) != 0 || u < 5U || u > 16U) return -1;
+        size_t pbytes = (m + 1U) >> 1U;
+        if (2U + (size_t)u + pbytes >= 1U + m) return -1;
+        if (*pos + (size_t)u + pbytes > end) return -1;
+        const uint8_t *pal = buf + *pos;
+        for (uint8_t i = 1U; i < u; i++) {
+            if (pal[i - 1U] >= pal[i]) return -1;
+        }
+        *pos += (size_t)u;
+        const uint8_t *packed = buf + *pos;
+        *pos += pbytes;
+        if ((m & 1U) != 0U && (packed[pbytes - 1U] >> 4U) != 0U) return -1;
+        for (size_t i = 0U; i < m; i++) {
+            uint8_t idx = (uint8_t)((packed[i >> 1U] >> (4U * (i & 1U))) & 0xFU);
+            if (idx >= u) return -1;
+            plane[i] = pal[idx];
+        }
+        return 0;
+    }
+    if (mode == CHMC_LANE_RLE) {
+        size_t start_pos = *pos;
+        size_t out_i = 0U;
+        while (out_i < m) {
+            uint8_t ctrl = 0U;
+            if (chmc_get_u8(buf, end, pos, &ctrl) != 0) return -1;
+            if (ctrl < 128U) {
+                size_t cnt = (size_t)ctrl + 1U;
+                if (out_i + cnt > m || *pos + cnt > end) return -1;
+                memcpy(plane + out_i, buf + *pos, cnt);
+                *pos += cnt;
+                out_i += cnt;
+            } else {
+                size_t cnt = (size_t)(ctrl - 128U) + 3U;
+                uint8_t val = 0U;
+                if (out_i + cnt > m || chmc_get_u8(buf, end, pos, &val) != 0) return -1;
+                memset(plane + out_i, val, cnt);
+                out_i += cnt;
+            }
+        }
+        if (*pos - start_pos >= m) return -1;
+        return 0;
+    }
+    if (mode == CHMC_LANE_RAW) {
+        if (*pos + m > end) return -1;
+        memcpy(plane, buf + *pos, m);
+        *pos += m;
+        return 0;
+    }
+    return -1;
+}
+
+static int chmc_encode_f64_col(ChemByteBuf *bb, const double *arr, size_t n) {
+    if (n == 0U) return 0;
+    if (!arr) return -1;
+    size_t zeros = 0U;
+    for (size_t i = 0U; i < n; i++) {
+        uint64_t u = 0U;
+        memcpy(&u, &arr[i], sizeof(u));
+        if (u == 0ULL) zeros++;
+    }
+    if (zeros == n) {
+        return bb_put_u8(bb, CHMC_COL_ALL_ZERO);
+    }
+    size_t mask_bytes = (n + 7U) >> 3U;
+    int use_mask = (zeros * 8U > mask_bytes + 1U) ? 1 : 0;
+    size_t m = use_mask ? (n - zeros) : n;
+    uint64_t *nz = (uint64_t *)malloc(m * sizeof(uint64_t));
+    uint8_t *plane = (uint8_t *)malloc(m);
+    if (!nz || !plane) {
+        free(nz);
+        free(plane);
+        return -1;
+    }
+    if (use_mask) {
+        if (bb_put_u8(bb, CHMC_COL_SPARSE_MASK) != 0 || bb_reserve(bb, mask_bytes) != 0) {
+            free(nz);
+            free(plane);
+            return -1;
+        }
+        uint8_t *mask = bb->data + bb->len;
+        memset(mask, 0, mask_bytes);
+        size_t mi = 0U;
+        for (size_t i = 0U; i < n; i++) {
+            uint64_t u = 0U;
+            memcpy(&u, &arr[i], sizeof(u));
+            if (u != 0ULL) {
+                mask[i >> 3U] |= (uint8_t)(1U << (i & 7U));
+                nz[mi++] = u;
+            }
+        }
+        bb->len += mask_bytes;
+    } else {
+        if (bb_put_u8(bb, CHMC_COL_DENSE) != 0) {
+            free(nz);
+            free(plane);
+            return -1;
+        }
+        for (size_t i = 0U; i < n; i++) {
+            memcpy(&nz[i], &arr[i], sizeof(nz[i]));
+        }
+    }
+
+    int rc = 0;
+    for (int lane = 7; lane >= 0; lane--) {
+        unsigned sh = (unsigned)(lane * 8);
+        for (size_t i = 0U; i < m; i++) {
+            plane[i] = (uint8_t)((nz[i] >> sh) & UINT64_C(0xFF));
+        }
+        if (chmc_encode_lane(bb, plane, m) != 0) {
+            rc = -1;
+            break;
+        }
+    }
+    free(nz);
+    free(plane);
+    return rc;
+}
+
+static int chmc_decode_f64_col(const uint8_t *buf, size_t end, size_t *pos, size_t n,
+                               double **arr_out) {
+    *arr_out = NULL;
+    if (n == 0U) return 0;
+    double *arr = (double *)calloc(n, sizeof(double));
+    if (!arr) return -1;
+
+    uint8_t col_mode = 0U;
+    if (chmc_get_u8(buf, end, pos, &col_mode) != 0) {
+        free(arr);
+        return -1;
+    }
+    if (col_mode == CHMC_COL_ALL_ZERO) {
+        *arr_out = arr;
+        return 0;
+    }
+
+    size_t mask_bytes = (n + 7U) >> 3U;
+    const uint8_t *mask = NULL;
+    size_t m = n;
+    if (col_mode == CHMC_COL_SPARSE_MASK) {
+        if (*pos + mask_bytes > end) {
+            free(arr);
+            return -1;
+        }
+        mask = buf + *pos;
+        *pos += mask_bytes;
+        if ((n & 7U) != 0U && (mask[mask_bytes - 1U] >> (n & 7U)) != 0U) {
+            free(arr);
+            return -1;
+        }
+        m = 0U;
+        for (size_t i = 0U; i < n; i++) {
+            if ((mask[i >> 3U] >> (i & 7U)) & 1U) m++;
+        }
+        if (m == 0U || m >= n || (n - m) * 8U <= mask_bytes + 1U) {
+            free(arr);
+            return -1;
+        }
+    } else if (col_mode != CHMC_COL_DENSE) {
+        free(arr);
+        return -1;
+    }
+
+    uint64_t *nz = (uint64_t *)calloc(m, sizeof(uint64_t));
+    uint8_t *plane = (uint8_t *)malloc(m);
+    if (!nz || !plane) {
+        free(nz);
+        free(plane);
+        free(arr);
+        return -1;
+    }
+
+    for (int lane = 7; lane >= 0; lane--) {
+        if (chmc_decode_lane(buf, end, pos, plane, m) != 0) {
+            free(nz);
+            free(plane);
+            free(arr);
+            return -1;
+        }
+        unsigned sh = (unsigned)(lane * 8);
+        for (size_t i = 0U; i < m; i++) {
+            nz[i] |= ((uint64_t)plane[i]) << sh;
+        }
+    }
+
+    if (col_mode == CHMC_COL_DENSE) {
+        size_t zeros = 0U;
+        for (size_t i = 0U; i < n; i++) {
+            if (nz[i] == 0ULL) zeros++;
+            memcpy(&arr[i], &nz[i], sizeof(arr[i]));
+        }
+        if (zeros == n || zeros * 8U > mask_bytes + 1U) {
+            free(nz);
+            free(plane);
+            free(arr);
+            return -1;
+        }
+    } else {
+        size_t mi = 0U;
+        for (size_t i = 0U; i < n; i++) {
+            if ((mask[i >> 3U] >> (i & 7U)) & 1U) {
+                if (nz[mi] == 0ULL) {
+                    free(nz);
+                    free(plane);
+                    free(arr);
+                    return -1;
+                }
+                memcpy(&arr[i], &nz[mi], sizeof(arr[i]));
+                mi++;
+            }
+        }
+    }
+
+    free(nz);
+    free(plane);
+    *arr_out = arr;
+    return 0;
+}
+
+static int chmc_encode_full_cert(const ChemFullCert *c, uint8_t **out_buf, size_t *out_len,
+                                 char *err, size_t err_sz) {
+    uint8_t sha_raw[32];
+    if (hex_to_bytes32(c->sha256_hex, sha_raw) != 0) {
+        set_err(err, err_sz, "invalid hamiltonian_sha256 hex string");
+        return -1;
+    }
+    size_t flen = strlen(c->fcidump_path);
+    if (flen > 4096U) {
+        set_err(err, err_sz, "fcidump_path exceeds 4096 bytes");
+        return -1;
+    }
+    if (c->t2_norbs < 0 || c->t2_norbs > CHEM_MAX_ORBITALS ||
+        c->t1_norbs < 0 || c->t1_norbs > CHEM_MAX_ORBITALS ||
+        c->meq < 0 || c->nD < 0 || c->nQ < 0 || c->nG < 0 || c->nT2 < 0 || c->nT1 < 0 ||
+        c->ndet_var < 0) {
+        set_err(err, err_sz, "invalid negative or oversized certificate dimensions");
+        return -1;
+    }
+
+    uint32_t flags = 0U;
+    if (c->mode == CHEM_MODE_B_GENERAL) flags |= CHMC_FLAG_MODE_B;
+    if (c->constrain_s2) flags |= CHMC_FLAG_CONSTRAIN_S2;
+    if (c->t2_enabled) flags |= CHMC_FLAG_T2;
+    if (c->t1_enabled) flags |= CHMC_FLAG_T1;
+    if (c->converged) flags |= CHMC_FLAG_CONVERGED;
+    if (c->veto_enabled) flags |= CHMC_FLAG_VETO_EN;
+    if (c->vetoed) flags |= CHMC_FLAG_VETOED;
+    if (c->has_var_meta) flags |= CHMC_FLAG_HAS_VAR_META;
+    if (c->has_witness && c->ndet_var > 0 && c->dets && c->psi0) flags |= CHMC_FLAG_HAS_WITNESS;
+    if (c->is_exact_fci) flags |= CHMC_FLAG_IS_EXACT_FCI;
+
+    ChemByteBuf bb;
+    memset(&bb, 0, sizeof(bb));
+    int ok = 1;
+    uint8_t magic[4] = {CHMC_MAGIC_0, CHMC_MAGIC_1, CHMC_MAGIC_2, CHMC_MAGIC_3};
+    if (bb_put_bytes(&bb, magic, 4U) != 0 ||
+        bb_put_le32(&bb, CHMC_VERSION) != 0 ||
+        bb_put_le32(&bb, flags) != 0 ||
+        bb_put_bytes(&bb, sha_raw, 32U) != 0) {
+        ok = 0;
+    }
+
+    uint8_t sver = (uint8_t)((c->schema_ver >= 1 && c->schema_ver <= 3) ? c->schema_ver : 1);
+    if (ok && (bb_put_u8(&bb, sver) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->K) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->nelec) != 0 ||
+               bb_put_i32(&bb, (int32_t)c->ms2) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->na) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->nb) != 0 ||
+               bb_put_i32(&bb, (int32_t)c->two_s) != 0)) {
+        ok = 0;
+    }
+
+    uint32_t t2n = c->t2_enabled ? (uint32_t)c->t2_norbs : 0U;
+    if (ok && bb_put_varu32(&bb, t2n) != 0) ok = 0;
+    for (uint32_t i = 0U; ok && i < t2n; i++) {
+        if (bb_put_varu32(&bb, (uint32_t)c->t2_orbs[i]) != 0) ok = 0;
+    }
+    uint32_t t1n = c->t1_enabled ? (uint32_t)c->t1_norbs : 0U;
+    if (ok && bb_put_varu32(&bb, t1n) != 0) ok = 0;
+    for (uint32_t i = 0U; ok && i < t1n; i++) {
+        if (bb_put_varu32(&bb, (uint32_t)c->t1_orbs[i]) != 0) ok = 0;
+    }
+
+    if (ok && (bb_put_varu32(&bb, (uint32_t)flen) != 0 ||
+               bb_put_bytes(&bb, c->fcidump_path, flen) != 0 ||
+               bb_put_f64(&bb, c->E_core) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->iters) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->iter_stopped) != 0 ||
+               bb_put_f64(&bb, c->E_primal) != 0 ||
+               bb_put_f64(&bb, c->E_dual_raw) != 0 ||
+               bb_put_f64(&bb, c->E_lb_cert) != 0 ||
+               bb_put_f64(&bb, c->min_eig_fp) != 0 ||
+               bb_put_f64(&bb, c->min_eig_cert) != 0 ||
+               bb_put_f64(&bb, c->delta_round) != 0 ||
+               bb_put_f64(&bb, c->prim_res) != 0 ||
+               bb_put_f64(&bb, c->dual_res) != 0 ||
+               bb_put_f64(&bb, c->elapsed_sec) != 0 ||
+               bb_put_f64(&bb, c->E_ai) != 0 ||
+               bb_put_f64(&bb, c->veto_tol) != 0 ||
+               bb_put_f64(&bb, c->E_ub_variational) != 0 ||
+               bb_put_f64(&bb, c->interval_width) != 0 ||
+               bb_put_i64(&bb, c->scale_nha) != 0 ||
+               bb_put_i64(&bb, c->E_lb_floor) != 0 ||
+               bb_put_i64(&bb, c->E_ub_ceil) != 0 ||
+               bb_put_i64(&bb, c->E_ai_minus_tol_floor) != 0 ||
+               bb_put_f64(&bb, c->E_ub) != 0)) {
+        ok = 0;
+    }
+
+    if (ok && (flags & CHMC_FLAG_HAS_VAR_META)) {
+        if (bb_put_f64(&bb, c->E_hf0) != 0 ||
+            bb_put_f64(&bb, c->E_scf) != 0 ||
+            bb_put_f64(&bb, c->E_searu_rot) != 0 ||
+            bb_put_f64(&bb, c->E_ci) != 0 ||
+            bb_put_varu64(&bb, c->ndet_space) != 0 ||
+            bb_put_varu32(&bb, (uint32_t)c->ndet_var) != 0) {
+            ok = 0;
+        }
+    }
+
+    if (ok && (bb_put_varu32(&bb, (uint32_t)c->meq) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->nD) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->nQ) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->nG) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->nT2) != 0 ||
+               bb_put_varu32(&bb, (uint32_t)c->nT1) != 0)) {
+        ok = 0;
+    }
+
+    /* Columnar Payload */
+    if (ok && c->meq > 0 && chmc_encode_f64_col(&bb, c->y_eq, (size_t)c->meq) != 0) ok = 0;
+    if (ok && c->nQ > 0 && chmc_encode_f64_col(&bb, c->Z_Q, (size_t)c->nQ) != 0) ok = 0;
+    if (ok && c->nG > 0 && chmc_encode_f64_col(&bb, c->Z_G, (size_t)c->nG) != 0) ok = 0;
+    if (ok && c->t2_enabled && c->nT2 > 0 &&
+        chmc_encode_f64_col(&bb, c->Z_T2, (size_t)c->nT2) != 0) {
+        ok = 0;
+    }
+    if (ok && c->t1_enabled && c->nT1 > 0 &&
+        chmc_encode_f64_col(&bb, c->Z_T1, (size_t)c->nT1) != 0) {
+        ok = 0;
+    }
+    if (ok && (flags & CHMC_FLAG_HAS_WITNESS)) {
+        for (int i = 0; ok && i < c->ndet_var; i++) {
+            if (bb_put_varu64(&bb, c->dets[i]) != 0) ok = 0;
+        }
+        if (ok && chmc_encode_f64_col(&bb, c->psi0, (size_t)c->ndet_var) != 0) ok = 0;
+    }
+
+    /* 32-byte FIPS-180-4 SHA-256 Integrity Trailer */
+    if (ok && bb_reserve(&bb, CHMC_TRAILER_BYTES) == 0) {
+        flow_sha256_ctx_t sctx;
+        uint8_t digest[32];
+        flow_sha256_init(&sctx);
+        flow_sha256_update(&sctx, bb.data, bb.len);
+        flow_sha256_final(&sctx, digest);
+        memcpy(bb.data + bb.len, digest, CHMC_TRAILER_BYTES);
+        bb.len += CHMC_TRAILER_BYTES;
+    } else {
+        ok = 0;
+    }
+
+    if (!ok) {
+        free(bb.data);
+        set_err(err, err_sz, "failed encoding CHMC binary certificate");
+        return -1;
+    }
+    *out_buf = bb.data;
+    *out_len = bb.len;
+    return 0;
+}
+
+static int chmc_decode_full_cert(const uint8_t *buf, size_t len, ChemFullCert *c,
+                                 char *err, size_t err_sz) {
+    memset(c, 0, sizeof(*c));
+    c->owns_arrays = 1;
+    if (!buf || len < CHMC_HDR_BYTES + CHMC_TRAILER_BYTES) {
+        set_err(err, err_sz, "truncated CHMC binary certificate");
+        return -1;
+    }
+    if (buf[0] != CHMC_MAGIC_0 || buf[1] != CHMC_MAGIC_1 ||
+        buf[2] != CHMC_MAGIC_2 || buf[3] != CHMC_MAGIC_3) {
+        set_err(err, err_sz, "invalid CHMC magic");
+        return -1;
+    }
+    size_t body_len = len - CHMC_TRAILER_BYTES;
+    flow_sha256_ctx_t sctx;
+    uint8_t digest[32];
+    flow_sha256_init(&sctx);
+    flow_sha256_update(&sctx, buf, body_len);
+    flow_sha256_final(&sctx, digest);
+    uint8_t diff = 0U;
+    for (size_t i = 0U; i < CHMC_TRAILER_BYTES; i++) {
+        diff |= (uint8_t)(digest[i] ^ buf[body_len + i]);
+    }
+    if (diff != 0U) {
+        set_err(err, err_sz, "CHMC SHA-256 integrity trailer mismatch (corrupted or tampered)");
+        return -1;
+    }
+
+    size_t pos = 4U;
+    uint32_t ver = 0U, flags = 0U;
+    if (chmc_get_le32(buf, body_len, &pos, &ver) != 0 || ver != CHMC_VERSION ||
+        chmc_get_le32(buf, body_len, &pos, &flags) != 0 ||
+        (flags & ~CHMC_FLAGS_VALID_MASK) != 0U) {
+        set_err(err, err_sz, "unsupported CHMC version or invalid flags");
+        return -1;
+    }
+    if (pos + 32U > body_len) {
+        set_err(err, err_sz, "truncated CHMC header SHA-256");
+        return -1;
+    }
+    flow_sha256_digest_to_hex(buf + pos, c->sha256_hex);
+    pos += 32U;
+
+    c->mode = (flags & CHMC_FLAG_MODE_B) ? CHEM_MODE_B_GENERAL : CHEM_MODE_A_SINGLET;
+    c->constrain_s2 = (flags & CHMC_FLAG_CONSTRAIN_S2) ? 1 : 0;
+    c->t2_enabled = (flags & CHMC_FLAG_T2) ? 1 : 0;
+    c->t1_enabled = (flags & CHMC_FLAG_T1) ? 1 : 0;
+    c->converged = (flags & CHMC_FLAG_CONVERGED) ? 1 : 0;
+    c->veto_enabled = (flags & CHMC_FLAG_VETO_EN) ? 1 : 0;
+    c->vetoed = (flags & CHMC_FLAG_VETOED) ? 1 : 0;
+    c->has_var_meta = (flags & CHMC_FLAG_HAS_VAR_META) ? 1 : 0;
+    c->has_witness = (flags & CHMC_FLAG_HAS_WITNESS) ? 1 : 0;
+    c->is_exact_fci = (flags & CHMC_FLAG_IS_EXACT_FCI) ? 1 : 0;
+    if (c->has_witness && !c->has_var_meta) {
+        set_err(err, err_sz, "invalid CHMC flags: witness without var_meta");
+        return -1;
+    }
+
+    uint8_t sver = 0U;
+    uint32_t K = 0U, nelec = 0U, na = 0U, nb = 0U, t2n = 0U, t1n = 0U, flen = 0U;
+    uint32_t iters = 0U, iter_stopped = 0U;
+    int32_t ms2 = 0, two_s = 0;
+    if (chmc_get_u8(buf, body_len, &pos, &sver) != 0 || sver < 1U || sver > 3U ||
+        chmc_get_varu32(buf, body_len, &pos, &K) != 0 || K == 0U || K > CHEM_MAX_ORBITALS ||
+        chmc_get_varu32(buf, body_len, &pos, &nelec) != 0 || nelec > 2U * K ||
+        chmc_get_i32(buf, body_len, &pos, &ms2) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &na) != 0 || na > K ||
+        chmc_get_varu32(buf, body_len, &pos, &nb) != 0 || nb > K ||
+        chmc_get_i32(buf, body_len, &pos, &two_s) != 0) {
+        set_err(err, err_sz, "malformed CHMC orbital/electron metadata");
+        return -1;
+    }
+    c->schema_ver = (int)sver;
+    c->K = (int)K;
+    c->nelec = (int)nelec;
+    c->ms2 = (int)ms2;
+    c->na = (int)na;
+    c->nb = (int)nb;
+    c->two_s = (int)two_s;
+
+    if (chmc_get_varu32(buf, body_len, &pos, &t2n) != 0 || t2n > CHEM_MAX_ORBITALS ||
+        (!c->t2_enabled && t2n != 0U)) {
+        set_err(err, err_sz, "malformed CHMC t2 metadata");
+        return -1;
+    }
+    c->t2_norbs = (int)t2n;
+    for (uint32_t i = 0U; i < t2n; i++) {
+        uint32_t orb = 0U;
+        if (chmc_get_varu32(buf, body_len, &pos, &orb) != 0 || orb >= K) {
+            set_err(err, err_sz, "malformed CHMC t2 orbital index");
+            return -1;
+        }
+        c->t2_orbs[i] = (int)orb;
+    }
+
+    if (chmc_get_varu32(buf, body_len, &pos, &t1n) != 0 || t1n > CHEM_MAX_ORBITALS ||
+        (!c->t1_enabled && t1n != 0U)) {
+        set_err(err, err_sz, "malformed CHMC t1 metadata");
+        return -1;
+    }
+    c->t1_norbs = (int)t1n;
+    for (uint32_t i = 0U; i < t1n; i++) {
+        uint32_t orb = 0U;
+        if (chmc_get_varu32(buf, body_len, &pos, &orb) != 0 || orb >= K) {
+            set_err(err, err_sz, "malformed CHMC t1 orbital index");
+            return -1;
+        }
+        c->t1_orbs[i] = (int)orb;
+    }
+
+    if (chmc_get_varu32(buf, body_len, &pos, &flen) != 0 || flen > 4096U ||
+        pos + (size_t)flen > body_len) {
+        set_err(err, err_sz, "malformed CHMC fcidump_path");
+        return -1;
+    }
+    if (flen > 0U) memcpy(c->fcidump_path, buf + pos, (size_t)flen);
+    c->fcidump_path[flen] = '\0';
+    pos += (size_t)flen;
+
+    if (chmc_get_f64(buf, body_len, &pos, &c->E_core) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &iters) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &iter_stopped) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->E_primal) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->E_dual_raw) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->E_lb_cert) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->min_eig_fp) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->min_eig_cert) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->delta_round) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->prim_res) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->dual_res) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->elapsed_sec) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->E_ai) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->veto_tol) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->E_ub_variational) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->interval_width) != 0 ||
+        chmc_get_i64(buf, body_len, &pos, &c->scale_nha) != 0 ||
+        chmc_get_i64(buf, body_len, &pos, &c->E_lb_floor) != 0 ||
+        chmc_get_i64(buf, body_len, &pos, &c->E_ub_ceil) != 0 ||
+        chmc_get_i64(buf, body_len, &pos, &c->E_ai_minus_tol_floor) != 0 ||
+        chmc_get_f64(buf, body_len, &pos, &c->E_ub) != 0) {
+        set_err(err, err_sz, "truncated CHMC scalar metadata");
+        return -1;
+    }
+    c->iters = (int)iters;
+    c->iter_stopped = (int)iter_stopped;
+
+    if (c->has_var_meta) {
+        uint32_t ndv = 0U;
+        if (chmc_get_f64(buf, body_len, &pos, &c->E_hf0) != 0 ||
+            chmc_get_f64(buf, body_len, &pos, &c->E_scf) != 0 ||
+            chmc_get_f64(buf, body_len, &pos, &c->E_searu_rot) != 0 ||
+            chmc_get_f64(buf, body_len, &pos, &c->E_ci) != 0 ||
+            chmc_get_varu64(buf, body_len, &pos, &c->ndet_space) != 0 ||
+            chmc_get_varu32(buf, body_len, &pos, &ndv) != 0 || ndv > 65536U) {
+            set_err(err, err_sz, "malformed CHMC variational metadata");
+            return -1;
+        }
+        c->ndet_var = (int)ndv;
+    }
+    if (c->has_witness && c->ndet_var <= 0) {
+        set_err(err, err_sz, "invalid CHMC witness count");
+        return -1;
+    }
+
+    uint32_t meq = 0U, nD = 0U, nQ = 0U, nG = 0U, nT2 = 0U, nT1 = 0U;
+    if (chmc_get_varu32(buf, body_len, &pos, &meq) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &nD) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &nQ) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &nG) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &nT2) != 0 ||
+        chmc_get_varu32(buf, body_len, &pos, &nT1) != 0 ||
+        meq > 65536U || nD > 16777216U || nQ > 16777216U || nG > 16777216U ||
+        nT2 > 16777216U || nT1 > 16777216U) {
+        set_err(err, err_sz, "malformed CHMC dual witness dimensions");
+        return -1;
+    }
+    c->meq = (int)meq;
+    c->nD = (int)nD;
+    c->nQ = (int)nQ;
+    c->nG = (int)nG;
+    c->nT2 = (int)nT2;
+    c->nT1 = (int)nT1;
+
+    if ((meq > 0U && chmc_decode_f64_col(buf, body_len, &pos, (size_t)meq, &c->y_eq) != 0) ||
+        (nQ > 0U && chmc_decode_f64_col(buf, body_len, &pos, (size_t)nQ, &c->Z_Q) != 0) ||
+        (nG > 0U && chmc_decode_f64_col(buf, body_len, &pos, (size_t)nG, &c->Z_G) != 0) ||
+        (c->t2_enabled && nT2 > 0U &&
+         chmc_decode_f64_col(buf, body_len, &pos, (size_t)nT2, &c->Z_T2) != 0) ||
+        (c->t1_enabled && nT1 > 0U &&
+         chmc_decode_f64_col(buf, body_len, &pos, (size_t)nT1, &c->Z_T1) != 0)) {
+        full_cert_free(c);
+        set_err(err, err_sz, "corrupt CHMC dual witness column");
+        return -1;
+    }
+
+    if (c->has_witness) {
+        c->dets = (uint64_t *)malloc((size_t)c->ndet_var * sizeof(uint64_t));
+        if (!c->dets) {
+            full_cert_free(c);
+            set_err(err, err_sz, "out of memory decoding CHMC dets");
+            return -1;
+        }
+        for (int i = 0; i < c->ndet_var; i++) {
+            if (chmc_get_varu64(buf, body_len, &pos, &c->dets[i]) != 0) {
+                full_cert_free(c);
+                set_err(err, err_sz, "corrupt CHMC determinant column");
+                return -1;
+            }
+        }
+        if (chmc_decode_f64_col(buf, body_len, &pos, (size_t)c->ndet_var, &c->psi0) != 0) {
+            full_cert_free(c);
+            set_err(err, err_sz, "corrupt CHMC psi0 column");
+            return -1;
+        }
+    }
+
+    if (pos != body_len) {
+        full_cert_free(c);
+        set_err(err, err_sz, "trailing bytes in CHMC certificate (%zu != %zu)", pos, body_len);
+        return -1;
+    }
+    return 0;
+}
+
+static int json_parse_full_cert(const char *txt, size_t len, ChemFullCert *c,
+                                char *err, size_t err_sz) {
+    memset(c, 0, sizeof(*c));
+    c->owns_arrays = 1;
+    const char *s = txt, *e = txt + len;
+
+    char schema_str[64] = {0};
+    char mode_str[64] = {0};
+    if (json_get_string(s, e, "hamiltonian_sha256", c->sha256_hex, sizeof(c->sha256_hex)) != 0 ||
+        json_get_string(s, e, "fcidump_path", c->fcidump_path, sizeof(c->fcidump_path)) != 0 ||
+        json_get_string(s, e, "mode", mode_str, sizeof(mode_str)) != 0 ||
+        json_get_int(s, e, "K", &c->K) != 0 ||
+        json_get_int(s, e, "nelec", &c->nelec) != 0 ||
+        json_get_int(s, e, "ms2", &c->ms2) != 0 ||
+        json_get_int(s, e, "na", &c->na) != 0 ||
+        json_get_int(s, e, "nb", &c->nb) != 0 ||
+        json_get_int(s, e, "two_s", &c->two_s) != 0 ||
+        json_get_int(s, e, "constrain_s2", &c->constrain_s2) != 0 ||
+        json_get_double(s, e, "E_core", &c->E_core) != 0) {
+        set_err(err, err_sz, "malformed top-level JSON certificate fields");
+        return -1;
+    }
+    c->mode = (strcmp(mode_str, "A_SINGLET") == 0) ? CHEM_MODE_A_SINGLET : CHEM_MODE_B_GENERAL;
+
+    if (json_get_int(s, e, "t2_enabled", &c->t2_enabled) == 0 && c->t2_enabled) {
+        if (json_get_int(s, e, "t2_norbs", &c->t2_norbs) != 0 || c->t2_norbs <= 0 ||
+            c->t2_norbs > CHEM_MAX_ORBITALS ||
+            json_get_int_array(s, e, "t2_orbs", c->t2_norbs, c->t2_orbs) != 0) {
+            set_err(err, err_sz, "malformed t2 metadata in JSON certificate");
+            return -1;
+        }
+    }
+    if (json_get_int(s, e, "t1_enabled", &c->t1_enabled) == 0 && c->t1_enabled) {
+        if (json_get_int(s, e, "t1_norbs", &c->t1_norbs) != 0 || c->t1_norbs <= 0 ||
+            c->t1_norbs > CHEM_MAX_ORBITALS ||
+            json_get_int_array(s, e, "t1_orbs", c->t1_norbs, c->t1_orbs) != 0) {
+            set_err(err, err_sz, "malformed t1 metadata in JSON certificate");
+            return -1;
+        }
+    }
+    if (json_get_string(s, e, "schema_version", schema_str, sizeof(schema_str)) == 0) {
+        if (strcmp(schema_str, "chem-cert-v3") == 0) c->schema_ver = 3;
+        else if (strcmp(schema_str, "chem-cert-v2") == 0) c->schema_ver = 2;
+        else c->schema_ver = 1;
+    } else {
+        c->schema_ver = c->t1_enabled ? 3 : (c->t2_enabled ? 2 : 1);
+    }
+
+    const char *sol_s = NULL, *sol_e = NULL;
+    const char *vet_s = NULL, *vet_e = NULL;
+    const char *lean_s = NULL, *lean_e = NULL;
+    const char *var_s = NULL, *var_e = NULL;
+    const char *dw_s = NULL, *dw_e = NULL;
+    if (json_get_object_range(s, e, "solver", &sol_s, &sol_e) != 0 ||
+        json_get_object_range(s, e, "dual_witness", &dw_s, &dw_e) != 0) {
+        set_err(err, err_sz, "missing solver or dual_witness JSON section");
+        return -1;
+    }
+    if (json_get_int(sol_s, sol_e, "iters", &c->iters) != 0 ||
+        json_get_int(sol_s, sol_e, "converged", &c->converged) != 0 ||
+        json_get_int(sol_s, sol_e, "vetoed", &c->vetoed) != 0 ||
+        json_get_int(sol_s, sol_e, "iter_stopped", &c->iter_stopped) != 0 ||
+        json_get_double(sol_s, sol_e, "E_primal", &c->E_primal) != 0 ||
+        json_get_double(sol_s, sol_e, "E_dual_raw", &c->E_dual_raw) != 0 ||
+        json_get_double(sol_s, sol_e, "E_lb_cert", &c->E_lb_cert) != 0 ||
+        json_get_double(sol_s, sol_e, "min_eig_fp", &c->min_eig_fp) != 0 ||
+        json_get_double(sol_s, sol_e, "min_eig_cert", &c->min_eig_cert) != 0 ||
+        json_get_double(sol_s, sol_e, "delta_round", &c->delta_round) != 0 ||
+        json_get_double(sol_s, sol_e, "prim_res", &c->prim_res) != 0 ||
+        json_get_double(sol_s, sol_e, "dual_res", &c->dual_res) != 0 ||
+        json_get_double(sol_s, sol_e, "elapsed_sec", &c->elapsed_sec) != 0) {
+        set_err(err, err_sz, "malformed solver fields in JSON certificate");
+        return -1;
+    }
+
+    if (json_get_object_range(s, e, "veto", &vet_s, &vet_e) == 0) {
+        if (json_get_int(vet_s, vet_e, "enabled", &c->veto_enabled) != 0 ||
+            json_get_double(vet_s, vet_e, "E_ai", &c->E_ai) != 0 ||
+            json_get_double(vet_s, vet_e, "veto_tol", &c->veto_tol) != 0 ||
+            json_get_double(vet_s, vet_e, "E_ub_variational", &c->E_ub_variational) != 0 ||
+            json_get_double(vet_s, vet_e, "interval_width", &c->interval_width) != 0) {
+            set_err(err, err_sz, "malformed veto fields in JSON certificate");
+            return -1;
+        }
+    } else {
+        c->veto_tol = 1e-4;
+        c->E_ub_variational = c->E_primal;
+        c->interval_width = c->E_ub_variational - c->E_lb_cert;
+    }
+
+    if (json_get_object_range(s, e, "lean_scaled_witness", &lean_s, &lean_e) == 0) {
+        if (json_get_i64(lean_s, lean_e, "scale_nha", &c->scale_nha) != 0 ||
+            json_get_i64(lean_s, lean_e, "E_lb_floor", &c->E_lb_floor) != 0 ||
+            json_get_i64(lean_s, lean_e, "E_ub_ceil", &c->E_ub_ceil) != 0 ||
+            json_get_i64(lean_s, lean_e, "E_ai_minus_tol_floor", &c->E_ai_minus_tol_floor) != 0) {
+            set_err(err, err_sz, "malformed lean_scaled_witness in JSON certificate");
+            return -1;
+        }
+    } else {
+        c->scale_nha = 1000000000LL;
+        c->E_lb_floor = (int64_t)floor(c->E_lb_cert * 1e9);
+        c->E_ub_ceil = (int64_t)ceil(c->E_ub_variational * 1e9);
+        c->E_ai_minus_tol_floor = (int64_t)floor((c->E_ai - c->veto_tol) * 1e9);
+    }
+
+    if (json_get_object_range(s, e, "variational", &var_s, &var_e) == 0) {
+        if (json_get_double(var_s, var_e, "E_ub", &c->E_ub) != 0 ||
+            json_get_int(var_s, var_e, "has_witness", &c->has_witness) != 0) {
+            set_err(err, err_sz, "malformed variational section in JSON certificate");
+            return -1;
+        }
+        if (json_get_double(var_s, var_e, "E_hf0", &c->E_hf0) == 0) {
+            c->has_var_meta = 1;
+            if (json_get_double(var_s, var_e, "E_scf", &c->E_scf) != 0 ||
+                json_get_double(var_s, var_e, "E_searu_rot", &c->E_searu_rot) != 0 ||
+                json_get_double(var_s, var_e, "E_ci", &c->E_ci) != 0 ||
+                json_get_int(var_s, var_e, "is_exact_fci", &c->is_exact_fci) != 0 ||
+                json_get_u64(var_s, var_e, "ndet_space", &c->ndet_space) != 0 ||
+                json_get_int(var_s, var_e, "ndet_var", &c->ndet_var) != 0) {
+                set_err(err, err_sz, "malformed variational metadata in JSON certificate");
+                return -1;
+            }
+            if (c->has_witness) {
+                if (c->ndet_var <= 0 ||
+                    json_get_u64_hex_array(var_s, var_e, "dets", c->ndet_var, &c->dets) != 0 ||
+                    json_get_double_array(var_s, var_e, "psi0", c->ndet_var, &c->psi0) != 0) {
+                    full_cert_free(c);
+                    set_err(err, err_sz, "malformed variational witness arrays in JSON cert");
+                    return -1;
+                }
+            }
+        }
+    } else {
+        c->E_ub = c->E_ub_variational;
+    }
+
+    if (json_get_int(dw_s, dw_e, "meq", &c->meq) != 0 ||
+        json_get_int(dw_s, dw_e, "nD", &c->nD) != 0 ||
+        json_get_int(dw_s, dw_e, "nQ", &c->nQ) != 0 ||
+        json_get_int(dw_s, dw_e, "nG", &c->nG) != 0 ||
+        json_get_int(dw_s, dw_e, "nT2", &c->nT2) != 0 ||
+        (c->t1_enabled && json_get_int(dw_s, dw_e, "nT1", &c->nT1) != 0)) {
+        full_cert_free(c);
+        set_err(err, err_sz, "missing dual_witness dimensions in JSON certificate");
+        return -1;
+    }
+
+    if (json_get_double_array(dw_s, dw_e, "y_eq", c->meq, &c->y_eq) != 0 ||
+        json_get_double_array(dw_s, dw_e, "Z_Q", c->nQ, &c->Z_Q) != 0 ||
+        json_get_double_array(dw_s, dw_e, "Z_G", c->nG, &c->Z_G) != 0 ||
+        (c->t2_enabled && c->nT2 > 0 &&
+         json_get_double_array(dw_s, dw_e, "Z_T2", c->nT2, &c->Z_T2) != 0) ||
+        (c->t1_enabled && c->nT1 > 0 &&
+         json_get_double_array(dw_s, dw_e, "Z_T1", c->nT1, &c->Z_T1) != 0)) {
+        full_cert_free(c);
+        set_err(err, err_sz, "failed parsing dual_witness arrays in JSON certificate");
+        return -1;
+    }
+    return 0;
+}
+
+static int write_buf_to_file(const char *path, const uint8_t *buf, size_t len,
+                             char *err, size_t err_sz) {
+    FILE *fp = fopen(path, "wb");
+    if (!fp) {
+        set_err(err, err_sz, "cannot open output path: %s", path);
+        return -1;
+    }
+    size_t nw = (len > 0U) ? fwrite(buf, 1, len, fp) : 0U;
+    int ferr = ferror(fp);
+    fclose(fp);
+    if (nw != len || ferr) {
+        set_err(err, err_sz, "short write to %s", path);
+        return -1;
+    }
+    return 0;
+}
+
+int chem_cert_write_chmc(const char *path, const ChemHam *ham, const char *fcidump_path,
+                         const ChemSolveResult *res, const struct ChemVarResult *var_opt,
+                         const ChemSolveOpts *opts_in, char *err, size_t err_sz) {
+    if (!path || !ham || !res) {
+        set_err(err, err_sz, "null argument to chem_cert_write_chmc");
+        return -1;
+    }
+    ChemFullCert fc;
+    full_cert_from_solve(&fc, ham, fcidump_path, res, var_opt, opts_in);
+    uint8_t *buf = NULL;
+    size_t len = 0U;
+    if (chmc_encode_full_cert(&fc, &buf, &len, err, err_sz) != 0) return -1;
+    int rc = write_buf_to_file(path, buf, len, err, err_sz);
+    free(buf);
+    return rc;
+}
+
+int chem_cert_pack(const char *json_path, const char *bin_path, char *err, size_t err_sz) {
+    if (!json_path || !bin_path) {
+        set_err(err, err_sz, "null path to chem_cert_pack");
+        return -1;
+    }
+    size_t len = 0U;
+    char *txt = read_entire_file(json_path, &len);
+    if (!txt) {
+        set_err(err, err_sz, "cannot read JSON certificate: %s", json_path);
+        return -1;
+    }
+    ChemFullCert fc;
+    if (json_parse_full_cert(txt, len, &fc, err, err_sz) != 0) {
+        free(txt);
+        return -1;
+    }
+    free(txt);
+
+    uint8_t *buf = NULL;
+    size_t blen = 0U;
+    if (chmc_encode_full_cert(&fc, &buf, &blen, err, err_sz) != 0) {
+        full_cert_free(&fc);
+        return -1;
+    }
+    full_cert_free(&fc);
+    int rc = write_buf_to_file(bin_path, buf, blen, err, err_sz);
+    free(buf);
+    return rc;
+}
+
+int chem_cert_unpack(const char *bin_path, const char *json_path, char *err, size_t err_sz) {
+    if (!bin_path || !json_path) {
+        set_err(err, err_sz, "null path to chem_cert_unpack");
+        return -1;
+    }
+    size_t len = 0U;
+    char *raw = read_entire_file(bin_path, &len);
+    if (!raw) {
+        set_err(err, err_sz, "cannot read binary certificate: %s", bin_path);
+        return -1;
+    }
+    ChemFullCert fc;
+    if (chmc_decode_full_cert((const uint8_t *)raw, len, &fc, err, err_sz) != 0) {
+        free(raw);
+        return -1;
+    }
+    free(raw);
+
+    FILE *fp = fopen(json_path, "w");
+    if (!fp) {
+        full_cert_free(&fc);
+        set_err(err, err_sz, "cannot open JSON output path: %s", json_path);
+        return -1;
+    }
+    json_write_full_cert(fp, &fc);
+    int ferr = ferror(fp);
+    fclose(fp);
+    full_cert_free(&fc);
+    if (ferr) {
+        set_err(err, err_sz, "write error on JSON output path: %s", json_path);
+        return -1;
+    }
+    return 0;
+}
+
+/* ============================================================================
+ * Shared Certificate Loader (.cert.json, .cert.bin [CHMC], & .flowchem)
  * ============================================================================ */
 
 typedef struct {
@@ -6328,6 +7702,83 @@ static int load_cert_bin(const char *fcidump_override, const char *buf, size_t l
     return 0;
 }
 
+static int load_cert_chmc(const char *fcidump_override, const char *buf, size_t len,
+                          ChemLoadedCert *lc, char *msg, size_t msg_sz) {
+    lc->is_binary = 1;
+    ChemFullCert fc;
+    if (chmc_decode_full_cert((const uint8_t *)buf, len, &fc, msg, msg_sz) != 0) {
+        return -1;
+    }
+
+    char fcidump_file[4098] = {0};
+    if (fcidump_override && fcidump_override[0]) {
+        snprintf(fcidump_file, sizeof(fcidump_file), "%s", fcidump_override);
+    } else if (fc.fcidump_path[0]) {
+        snprintf(fcidump_file, sizeof(fcidump_file), "%s", fc.fcidump_path);
+    } else {
+        full_cert_free(&fc);
+        snprintf(msg, msg_sz, "CHMC certificate missing fcidump_path");
+        return -1;
+    }
+
+    char err[256] = {0};
+    if (chem_fcidump_load(fcidump_file, &lc->ham, err, sizeof(err)) != 0) {
+        full_cert_free(&fc);
+        snprintf(msg, msg_sz, "FCIDUMP load failed: %s", err);
+        return -1;
+    }
+    if (strcmp(lc->ham.sha256_hex, fc.sha256_hex) != 0) {
+        lc->sha_ok = 0;
+        full_cert_free(&fc);
+        snprintf(msg, msg_sz, "SHA-256 mismatch in CHMC cert");
+        return -1;
+    }
+    if (fc.K != lc->ham.K || fc.na != lc->ham.na || fc.nb != lc->ham.nb) {
+        full_cert_free(&fc);
+        snprintf(msg, msg_sz, "CHMC orbital/electron metadata mismatch vs FCIDUMP");
+        return -1;
+    }
+    lc->sha_ok = 1;
+    lc->E_lb_claimed = fc.E_lb_cert;
+    lc->vetoed = fc.vetoed;
+    lc->E_ai = fc.E_ai;
+    lc->veto_tol = fc.veto_tol;
+    lc->has_witness = (fc.has_witness && fc.ndet_var > 0) ? 1 : 0;
+    lc->ndet_var = fc.ndet_var;
+    lc->E_ub_claimed = fc.E_ub;
+    lc->E_ci_claimed = fc.has_var_meta ? fc.E_ci : fc.E_ub;
+
+    lc->dw.mode = fc.mode;
+    lc->dw.K = lc->ham.K;
+    lc->dw.na = lc->ham.na;
+    lc->dw.nb = lc->ham.nb;
+    lc->dw.two_s = fc.two_s;
+    lc->dw.constrain_s2 = fc.constrain_s2;
+    lc->dw.t2_enabled = fc.t2_enabled;
+    lc->dw.t2_norbs = fc.t2_norbs;
+    if (fc.t2_norbs > 0) memcpy(lc->dw.t2_orbs, fc.t2_orbs, (size_t)fc.t2_norbs * sizeof(int));
+    lc->dw.t1_enabled = fc.t1_enabled;
+    lc->dw.t1_norbs = fc.t1_norbs;
+    if (fc.t1_norbs > 0) memcpy(lc->dw.t1_orbs, fc.t1_orbs, (size_t)fc.t1_norbs * sizeof(int));
+    lc->dw.meq = fc.meq;
+    lc->dw.nD = fc.nD;
+    lc->dw.nQ = fc.nQ;
+    lc->dw.nG = fc.nG;
+    lc->dw.nT2 = fc.nT2;
+    lc->dw.nT1 = fc.nT1;
+
+    /* Transfer ownership of array buffers directly without copying */
+    lc->dw.y_eq = fc.y_eq; fc.y_eq = NULL;
+    lc->dw.Z_Q = fc.Z_Q;   fc.Z_Q = NULL;
+    lc->dw.Z_G = fc.Z_G;   fc.Z_G = NULL;
+    lc->dw.Z_T2 = fc.Z_T2; fc.Z_T2 = NULL;
+    lc->dw.Z_T1 = fc.Z_T1; fc.Z_T1 = NULL;
+    lc->dets = fc.dets;    fc.dets = NULL;
+    lc->psi0 = fc.psi0;    fc.psi0 = NULL;
+    full_cert_free(&fc);
+    return 0;
+}
+
 static int load_cert_common(const char *fcidump_override, const char *cert_path,
                             ChemLoadedCert *lc, char *msg, size_t msg_sz) {
     memset(lc, 0, sizeof(*lc));
@@ -6336,6 +7787,12 @@ static int load_cert_common(const char *fcidump_override, const char *cert_path,
     if (!txt) {
         snprintf(msg, msg_sz, "cannot read certificate: %s", cert_path);
         return -1;
+    }
+    if (len >= 4U && memcmp(txt, "CHMC", 4) == 0) {
+        int rc = load_cert_chmc(fcidump_override, txt, len, lc, msg, msg_sz);
+        free(txt);
+        if (rc != 0) loaded_cert_free(lc);
+        return rc;
     }
     if (len >= 8U && memcmp(txt, "FLCH0002", 8) == 0) {
         int rc = load_cert_bin(fcidump_override, txt, len, lc, msg, msg_sz);

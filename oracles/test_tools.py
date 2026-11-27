@@ -137,6 +137,19 @@ def main():
         ev3 = oracle.exact_verify(c3, f3)
         assert ev3.get("returncode", -1) == 0 and ev3.get("all_blocks_sdd") == 1, f"exact_verify frame3 failed: {ev3}"
 
+        # CHMC (.cert.bin) pack / verify / exact-verify / byte-exact unpack roundtrip
+        c3_bin = os.path.join(tmpdir, "frame_003.cert.bin")
+        c3_unp = os.path.join(tmpdir, "frame_003_unpacked.cert.json")
+        oracle.cert_pack(c3, c3_bin)
+        assert os.path.getsize(c3_bin) < os.path.getsize(c3), f"CHMC not smaller than JSON: {os.path.getsize(c3_bin)} >= {os.path.getsize(c3)}"
+        cv_b = oracle.cert_verify(c3_bin, f3)
+        assert cv_b["ok"] is True, f"CHMC cert_verify failed: {cv_b}"
+        ev_b = oracle.exact_verify(c3_bin, f3)
+        assert ev_b.get("returncode", -1) == 0 and ev_b.get("all_blocks_sdd") == 1, f"CHMC exact_verify failed: {ev_b}"
+        oracle.cert_unpack(c3_bin, c3_unp)
+        with open(c3, "rb") as fa, open(c3_unp, "rb") as fb:
+            assert fa.read() == fb.read(), "CHMC pack->unpack did not roundtrip byte-exact JSON!"
+
         # Cationic HeH3+ trajectory with --charge 1 --two-s 0
         heh3_xyz = os.path.join(tmpdir, "heh3_cation.xyz")
         with open(heh3_xyz, "w") as f:
